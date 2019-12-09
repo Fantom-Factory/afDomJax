@@ -73,9 +73,9 @@ using dom::Event
 			inputs.add(input)
 			input.style.addClass("submitting")
 			input.enabled = false
-			if (input.style.hasClass("ckit-Button"))
+			if (input.style.hasClass("domkit-Button"))
 				input.style.addClass("disabled")
-			
+
 			// if we're able to submit, the inputs should be valid
 			Hyperform.setMsg(input, "")
 
@@ -96,14 +96,16 @@ using dom::Event
 			inputs.each |input| {
 				input.style.removeClass("submitting")
 				input.enabled = true
-				if (input.style.hasClass("ckit-Button"))
+				if (input.style.hasClass("domkit-Button"))
 					input.style.removeClass("disabled")
 			}
 		}
 		
 		domjax.onFormErrs |msg| {
-			msgDiv.querySelector(".errMsg").text = msg.errMsg
-			msgDiv.style.removeClass("d-none")
+			if (msgDiv != null) {
+				msgDiv.querySelector(".errMsg").text = msg.errMsg
+				msgDiv.style.removeClass("d-none")
+			}
 	
 			msg.formMsgs.each |val, key| {
 				elem := elem.querySelector("[name=${key}]") 

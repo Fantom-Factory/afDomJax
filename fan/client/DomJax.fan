@@ -57,7 +57,7 @@ using concurrent::Actor
 		req.headers["X-Requested-With"] = "XMLHttpRequest"
 		req.headers["X-Requested-By"]	= DomJax#.pod.name
 
-		url := req.fullUrl
+		url := req.url
 		HttpReq {
 			it.uri		= url
 			it.headers	= req.headers
@@ -67,7 +67,7 @@ using concurrent::Actor
 	Void goto(DomJaxReq req) {
 		if (req.method != "GET")
 			throw Err("Can only 'goto' GET requests - ${req.method} methods may return a redirect")
-		Win.cur.hyperlink(req.fullUrl)
+		Win.cur.hyperlink(req.url)
 	}
 	
 	// todo - use to clear masks and throbbers regardless of what the server returns
@@ -87,8 +87,8 @@ using concurrent::Actor
 	}
 	
 	** Implementations should should call fn(err) to inform other listeners of the err.
-	This onErr(|DomJaxErr, |DomJaxMsg|? |? fn) {	// This messes with F4
-//	This onErr(Func? fn) {
+//	This onErr(|DomJaxErr, |DomJaxMsg|? |? fn) {	// This messes with F4
+	This onErr(Func? fn) {
 		this.onErrFn = fn
 		return this
 	}
@@ -182,7 +182,7 @@ using concurrent::Actor
 @Js class DomJaxReq {
 	private DomJax?	domjax
 
-	Uri			url
+	Uri			_url
 	Str			method := "GET"
 	Obj?[]?		context
 	[Str:Str]?	query
@@ -191,17 +191,16 @@ using concurrent::Actor
 	Obj?		body
 	
 	new make(Uri url) {
-		this.url	= url
+		this._url	= url
 	}
 	
 	internal new _makeWith(Uri url, DomJax? domjax := null) {
-		this.url	= url
+		this._url	= url
 		this.domjax	= domjax
 	}
 
-	// todo fullUrl !? need a better name
-	internal Uri fullUrl() {
-		url := this.url
+	Uri url() {
+		url := this._url
 		if (this.context != null) {
 			context := this.context
 			if (context != null && url.pathStr.contains("*")) {

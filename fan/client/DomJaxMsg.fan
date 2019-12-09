@@ -71,7 +71,7 @@
 	const Str		errMsg
 	const Str:Str	formMsgs
 	
-	internal new make(|This| f) : super(f) { }
+	new make(|This| f) : super(f) { }
 }
 
 
@@ -82,7 +82,7 @@
 	const Str 		method
 	const Str:Str	form
 	
-	internal new make(|This| f) : super(f) { }
+	new make(|This| f) : super(f) { }
 }
 
 
@@ -95,5 +95,5 @@
 	@Transient
 	const Err?		cause
 	
-	internal new make(|This| f) : super(f) { }
+	new make(|This| f) : super(f) { }
 }
