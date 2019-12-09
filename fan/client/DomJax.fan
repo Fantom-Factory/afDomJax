@@ -47,6 +47,7 @@ using dom::Win
 		}
 		
 		req.headers["X-Requested-With"] = "XMLHttpRequest"
+		req.headers["X-Requested-By"]	= DomJax#.pod.name
 
 		url := req.fullUrl
 		HttpReq {
@@ -67,7 +68,6 @@ using dom::Win
 		return this
 	}
 	
-	// TODO FORMS create a Domjax and set this!
 	This onFormErrs(|DomJaxFormErrs| fn) {
 		this.onFormErrsFn = fn
 		return this
@@ -186,7 +186,7 @@ using dom::Win
 		this.domjax	= domjax
 	}
 
-	// TODO fullUrl !? need a better name
+	// todo fullUrl !? need a better name
 	internal Uri fullUrl() {
 		url := this.url
 		if (this.context != null) {

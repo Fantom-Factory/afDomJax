@@ -17,7 +17,7 @@ internal const class RedirectResponseProcessor : ResponseProcessor {
 	}
 	
 	override Obj process(Obj response) {
-		if (!httpReq.isXmlHttpRequest)	// TODO add specific domjax header
+		if (!httpReq.isXmlHttpRequest || httpReq.headers["X-Requested-By"] != DomJax#.pod.name)
 			return origProcessor.process(response)
 		
 		redirect	:= (Redirect) response

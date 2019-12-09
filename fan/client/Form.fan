@@ -101,6 +101,17 @@ using dom::Event
 			}
 		}
 		
+		domjax.onFormErrs |msg| {
+			msgDiv.querySelector(".errMsg").text = msg.errMsg
+			msgDiv.style.removeClass("d-none")
+	
+			msg.formMsgs.each |val, key| {
+				elem := elem.querySelector("[name=${key}]") 
+				elem.style.addClass("isWasValid")
+				Hyperform.setMsg(elem, val)
+			}
+		}
+		
 		req.form = formData
 		domjax.send(req) |msg| { _onSuccessFn(msg) }
 	}

@@ -5,6 +5,10 @@ using afBedSheet::GzipCompressible
 
 const class DomJaxModule {
 
+	Void defineServices(RegistryBuilder bob) {
+		bob.addService(DomJaxServer#)
+	}
+
 	// ---- BedSheet Configuration ----------------------------------------------------------------
 
 	@Contribute { serviceType=ResponseProcessors# }

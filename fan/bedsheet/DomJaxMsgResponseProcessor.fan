@@ -4,7 +4,7 @@ using afBedSheet::HttpRequest
 using afBedSheet::HttpResponse
 using afBedSheet::ResponseProcessor
 
-const class DomJaxMsgResponseProcessor : ResponseProcessor {
+internal const class DomJaxMsgResponseProcessor : ResponseProcessor {
 
 	@Inject private const HttpRequest	httpReq
 	@Inject private const HttpResponse	httpRes

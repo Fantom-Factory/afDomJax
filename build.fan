@@ -32,7 +32,7 @@ class Build : BuildPod {
 		]
 
 		srcDirs = [`fan/`, `fan/bedsheet/`, `fan/client/`, `fan/components/`, `test/`]
-		resDirs = [`doc/`]
+		resDirs = [`doc/`, `res/`]
 		jsDirs  = [`js/`]
 	}
 }
