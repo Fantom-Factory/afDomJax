@@ -1,0 +1,235 @@
+using dom::Elem
+using dom::HttpReq
+using dom::HttpRes
+using dom::Win
+
+@Js class DomJax {
+	private Log		log		:= DomJax#.pod.log
+//	@Config
+	private Str?	csrfToken		// null, cos it doesn't always exists - e.g. error pages
+
+	private Elem?	parent
+	
+	private	Func?	onResponseFn
+	private	Func?	onFormErrsFn
+	private	Func?	onRedirectFn
+	private	Func?	onErrFn
+	
+	new fromParent(Elem? parent) {
+		this.parent = parent
+		
+		this.onRedirect		 { doRedirect(it) }
+		this.onErr |err, fn| { doErr(err, fn) }
+	}
+	
+	DomJaxReq getReq(Uri url) {
+		DomJaxReq(url, this)
+	}
+	
+	DomJaxReq postReq(Uri url) {
+		DomJaxReq(url, this) { it.method = "POST" }
+	}
+	
+	Void get(Uri url, |DomJaxMsg|? fn := null) {
+		DomJaxReq(url, this).send(fn)
+	}
+
+	Void postForm(Uri url, Str:Str form, |DomJaxMsg|? fn := null) {
+		postReq(url) { it.form = form }.send(fn)
+	}
+
+	Void send(DomJaxReq req, |DomJaxMsg|? fn := null) {
+		
+		if (csrfToken != null && req.form != null) {
+			req.form = req.form.rw["_csrfToken"] = csrfToken
+			req.body = Uri.encodeQuery(req.form)
+			req.headers["Content-Type"] = "application/x-www-form-urlencoded"
+		}
+		
+		req.headers["X-Requested-With"] = "XMLHttpRequest"
+
+		url := req.fullUrl
+		HttpReq {
+			it.uri		= url
+			it.headers	= req.headers
+		}.send(req.method, req.body) { processRes(url, it, fn) }
+	}
+
+	Void goto(DomJaxReq req) {
+		if (req.method != "GET")
+			throw Err("Can only 'goto' GET requests - ${req.method} methods may return a redirect")
+		Win.cur.hyperlink(req.fullUrl)
+	}
+	
+	// todo - use to clear masks and throbbers regardless of what the server returns
+	This onResponse(|HttpRes| fn) {
+		this.onResponseFn = fn
+		return this
+	}
+	
+	// TODO FORMS create a Domjax and set this!
+	This onFormErrs(|DomJaxFormErrs| fn) {
+		this.onFormErrsFn = fn
+		return this
+	}
+	
+	This onRedirect(|DomJaxRedirect| fn) {
+		this.onRedirectFn = fn
+		return this
+	}
+	
+	This onErr(|DomJaxErr, |DomJaxMsg|?| fn) {
+		this.onErrFn = fn
+		return this
+	}
+	
+	This callErrFn(DomJaxErr err, |DomJaxMsg|? fn := null) {
+		onErrFn(err, fn)
+		return this
+	}
+	
+	// ----------------------------------------
+	
+	private Void processRes(Uri url, HttpRes res, |DomJaxMsg|? fn) {
+
+		// more than likely this is due to a timed out CSRF token
+		// lets not make a big deal out of it - just refresh the page
+		// and let the user continue with their life!
+		if (res.status == 403) {
+			Win.cur.reload
+			return
+		}
+		
+		try {
+			// keep us updated!
+			if (res.headers.containsKey("X-csrfToken"))
+				csrfToken = res.headers["X-csrfToken"]
+
+			onResponseFn?.call(res)
+			
+			if (res.headers["Content-Type"] != "text/fog")
+				onErrFn?.call(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"), fn)
+			
+			msg := (DomJaxMsg) res.content.toBuf.readObj
+
+			if (msg.isFormErrs) {
+				onFormErrsFn?.call(msg.toFormErrs)
+				return
+			}
+
+			if (msg.isRedirect) {
+				onRedirectFn?.call(msg.toRedirect)
+				return
+			}
+
+			if (msg.isErr) {
+				onErrFn?.call(msg.toErr, fn)
+				return
+			}
+
+			if (res.status != 200) {
+				onErrFn?.call(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"), fn)
+				return
+			}
+
+			fn?.call(msg)
+
+		} catch (Err err) {
+			// don't pass fn() to be called again if it just failed the first time round!
+			onErrFn?.call(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err))
+		}
+	}
+	
+	private Void doRedirect(DomJaxRedirect redirect) {
+		if (redirect.method == "GET")
+			return Win.cur.hyperlink(redirect.location)
+		
+		form := Elem("form") {
+			it.id = "jsRedirectForm"
+			it.setAttr("method", "POST")
+			it.setAttr("action", redirect.location.encode)
+		}
+		redirect.form.each |val, key| {
+			form.add(Elem("input") {
+				it.setAttr("type", "hidden")
+				it.setAttr("name", key)
+				it.setAttr("value", val)
+			})
+		}
+		Win.cur.doc.body.add(form)
+		Win.eval("document.getElementById('jsRedirectForm').submit();")
+		return
+	}
+	
+	private Void doErr(DomJaxErr err, |DomJaxMsg|? fn) {
+		throw Err(err.errTitle)
+	}
+}
+
+@Js class DomJaxReq {
+	private DomJax?	domjax
+
+	Uri			url
+	Str			method := "GET"
+	Obj?[]?		context
+	[Str:Str]?	query
+	Str:Str		headers	:= Str:Str[:]
+	[Str:Str]?	form
+	Obj?		body
+	
+	new make(Uri url) {
+		this.url	= url
+	}
+	
+	internal new _makeWith(Uri url, DomJax? domjax := null) {
+		this.url	= url
+		this.domjax	= domjax
+	}
+
+	// TODO fullUrl !? need a better name
+	internal Uri fullUrl() {
+		url := this.url
+		if (this.context != null) {
+			context := this.context
+			if (context != null && url.pathStr.contains("*")) {
+				path := url.path.map {
+					// maybe we should be doing some value encoding here?
+					it == "*" ? (context.remove(0) ?: "null"): it	// how does BedSheet decode nulls?
+				}
+				url = _newPath(url, path)
+			}
+		}
+		if (query != null)
+			url = url.plusQuery(query)
+		return url
+	}
+	
+	private static Uri _newPath(Uri url, Str[] path) {
+		str := ""
+		if (url.scheme != null)
+			str += url.scheme + ":"
+		if (url.auth != null)
+			str += "//" + url.auth + "/"
+		uri := str.toUri
+		if (url.isPathAbs)
+			uri = uri.plusSlash
+		path.each |p, i| { uri = (i == 0) ? uri.plusName(p) : uri.plusSlash.plusName(p) }
+		if (url.queryStr != null)
+			uri = uri.plusQuery(url.query)
+		if (url.frag != null)
+			uri = (uri.toStr + "#" + url.frag).toUri
+		return uri
+	}
+
+	Void send(|DomJaxMsg|? fn := null) {
+		domjax.send(this, fn)
+	}
+
+	Void sendVia(DomJax domjax, |DomJaxMsg|? fn := null) {
+		domjax.send(this, fn)
+	}
+
+	Void goto() {
+		domjax.goto(this)
+	}
+}
