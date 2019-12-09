@@ -9,10 +9,6 @@ using dom::Event
 	DomJax		domjax
 	DomJaxReq	req
 	
-	Uri formAction() {
-		Uri.decode(elem["action"])
-	}
-	
 	new make(Elem formElem, |This|? f := null) {
 		elem	= formElem
 		domjax	= DomJax(formElem)
@@ -33,7 +29,11 @@ using dom::Event
 			}
 		}
 	}
-	
+
+	Uri formAction() {
+		Uri.decode(elem["action"])
+	}
+
 	** A callback fn that can stop the form submission by returning 'true'. 
 	Void onSubmit(|->Bool| fn) {
 		_onSubmitFn = fn

@@ -1,6 +1,6 @@
 using dom::Elem
 
-@Js class Hyperform {
+@Js internal class Hyperform {
 	
 	native static Void setMsg(Elem elem, Str msg)
 }

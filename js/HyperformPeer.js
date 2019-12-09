@@ -1,9 +1,9 @@
 
-fan.afMarsApp.HyperformPeer = fan.sys.Obj.$extend(fan.sys.Obj);
+fan.afDomJax.HyperformPeer = fan.sys.Obj.$extend(fan.sys.Obj);
 
-fan.afMarsApp.HyperformPeer.prototype.$ctor = function(self) {}
+fan.afDomJax.HyperformPeer.prototype.$ctor = function(self) {}
 
-fan.afMarsApp.HyperformPeer.setMsg = function(elem, msg) {
+fan.afDomJax.HyperformPeer.setMsg = function(elem, msg) {
 	var element = elem.peer.elem;
 
 	// prevent stack-overflow errors

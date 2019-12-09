@@ -2,14 +2,11 @@ using dom::Elem
 using dom::HttpReq
 using dom::HttpRes
 using dom::Win
+using concurrent::Actor
 
 @Js class DomJax {
 	private Log		log		:= DomJax#.pod.log
-//	@Config
-	private Str?	csrfToken		// null, cos it doesn't always exists - e.g. error pages
-
-	private Elem?	parent
-	
+	private Elem?	parent	// FIXME needs to be passed to something to set masks and toasts
 	private	Func?	onResponseFn
 	private	Func?	onFormErrsFn
 	private	Func?	onRedirectFn
@@ -18,10 +15,20 @@ using dom::Win
 	new fromParent(Elem? parent) {
 		this.parent = parent
 		
-		this.onRedirect		 { doRedirect(it) }
-		this.onErr |err, fn| { doErr(err, fn) }
+		onResponse	(Actor.locals["afDomJax.onResponse"	])
+		onFormErrs	(Actor.locals["afDomJax.onFormErrs"	])
+		onRedirect	(Actor.locals["afDomJax.onRedirect"	])
+		onErr		(Actor.locals["afDomJax.onErr"		])
+		
+		if (this.onRedirectFn	== null)	this.onRedirect		 { doRedirect(it) }
+		if (this.onErrFn 		== null)	this.onErr |err, fn| { doErr(err, fn) }
 	}
-	
+
+	private Str? csrfToken {
+		get { Actor.locals["afDomJax.csrfToken"] }
+		set { Actor.locals["afDomJax.csrfToken"] = it }
+	}
+
 	DomJaxReq getReq(Uri url) {
 		DomJaxReq(url, this)
 	}
@@ -40,8 +47,9 @@ using dom::Win
 
 	Void send(DomJaxReq req, |DomJaxMsg|? fn := null) {
 		
-		if (csrfToken != null && req.form != null) {
-			req.form = req.form.rw["_csrfToken"] = csrfToken
+		if (req.form != null) {
+			if (csrfToken != null && req.form != null)
+				req.form = req.form.rw["_csrfToken"] = csrfToken
 			req.body = Uri.encodeQuery(req.form)
 			req.headers["Content-Type"] = "application/x-www-form-urlencoded"
 		}
@@ -63,22 +71,24 @@ using dom::Win
 	}
 	
 	// todo - use to clear masks and throbbers regardless of what the server returns
-	This onResponse(|HttpRes| fn) {
+	This onResponse(|HttpRes|? fn) {
 		this.onResponseFn = fn
 		return this
 	}
 	
-	This onFormErrs(|DomJaxFormErrs| fn) {
+	This onFormErrs(|DomJaxFormErrs|? fn) {
 		this.onFormErrsFn = fn
 		return this
 	}
 	
-	This onRedirect(|DomJaxRedirect| fn) {
+	This onRedirect(|DomJaxRedirect|? fn) {
 		this.onRedirectFn = fn
 		return this
 	}
 	
-	This onErr(|DomJaxErr, |DomJaxMsg|?| fn) {
+	** Implementations should should call fn(err) to inform other listeners of the err.
+	This onErr(|DomJaxErr, |DomJaxMsg|? |? fn) {	// This messes with F4
+//	This onErr(Func? fn) {
 		this.onErrFn = fn
 		return this
 	}
@@ -107,8 +117,10 @@ using dom::Win
 
 			onResponseFn?.call(res)
 			
-			if (res.headers["Content-Type"] != "text/fog")
+			if (res.headers["Content-Type"] != "text/fog") {
 				onErrFn?.call(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"), fn)
+				return
+			}
 			
 			msg := (DomJaxMsg) res.content.toBuf.readObj
 
@@ -161,8 +173,9 @@ using dom::Win
 		return
 	}
 	
-	private Void doErr(DomJaxErr err, |DomJaxMsg|? fn) {
-		throw Err(err.errTitle)
+	private Void doErr(DomJaxErr err, |DomJaxMsg?|? fn) {
+		Win.cur.alert("${err.errTitle}\n\n${err.errMsg}")
+		fn?.call(err)
 	}
 }
 
