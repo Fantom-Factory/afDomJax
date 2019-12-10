@@ -58,11 +58,17 @@
 		}
 	}
 	
+	[Str:Obj?]? payloadMap() { payload }
+	
 	@NoDoc	DomJaxFormErrs	toFormErrs()	{ this }
 	@NoDoc	DomJaxRedirect	toRedirect()	{ this }
 	@NoDoc	DomJaxErr		toErr()			{ this }
 	
 	private static const Str:Str emptyMap	:= Str:Str[:].toImmutable
+	
+	override Str toStr() {
+		"DomJax Okay"
+	}
 }
 
 
@@ -72,6 +78,10 @@
 	const Str:Str	formMsgs
 	
 	new make(|This| f) : super(f) { }
+
+	override Str toStr() {
+		"DomJax FormErrs: ${errMsg} ${formMsgs}"
+	}
 }
 
 
@@ -83,6 +93,10 @@
 	const Str:Str	form
 	
 	new make(|This| f) : super(f) { }
+
+	override Str toStr() {
+		"DomJax Redirect: ${location}"
+	}
 }
 
 
@@ -96,4 +110,8 @@
 	const Err?		cause
 	
 	new make(|This| f) : super(f) { }
+
+	override Str toStr() {
+		"DomJax Err: ${errType} - ${errMsg}"
+	}
 }

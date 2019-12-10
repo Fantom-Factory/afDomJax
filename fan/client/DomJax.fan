@@ -24,7 +24,8 @@ using concurrent::Actor
 		if (this.onErrFn 		== null)	this.onErr |err, fn| { doErr(err, fn) }
 	}
 
-	private Str? csrfToken {
+	@NoDoc
+	Str? csrfToken {
 		get { Actor.locals["afDomJax.csrfToken"] }
 		set { Actor.locals["afDomJax.csrfToken"] = it }
 	}
@@ -58,16 +59,13 @@ using concurrent::Actor
 		req.headers["X-Requested-By"]	= DomJax#.pod.name
 
 		url := req.url
-		HttpReq {
-			it.uri		= url
-			it.headers	= req.headers
-		}.send(req.method, req.body) { processRes(url, it, fn) }
+		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, fn) }
 	}
 
 	Void goto(DomJaxReq req) {
 		if (req.method != "GET")
 			throw Err("Can only 'goto' GET requests - ${req.method} methods may return a redirect")
-		Win.cur.hyperlink(req.url)
+		_doGoto(req.url)
 	}
 	
 	// todo - use to clear masks and throbbers regardless of what the server returns
@@ -87,14 +85,15 @@ using concurrent::Actor
 	}
 	
 	** Implementations should should call fn(err) to inform other listeners of the err.
-//	This onErr(|DomJaxErr, |DomJaxMsg|? |? fn) {	// This messes with F4
+//	This onErr(|DomJaxErr, |DomJaxMsg?|? |? fn) {	// This messes with F4
 	This onErr(Func? fn) {
 		this.onErrFn = fn
 		return this
 	}
 	
 	This callErrFn(DomJaxErr err, |DomJaxMsg|? fn := null) {
-		onErrFn(err, fn)
+		// Brian's weird type system throws NPEs if call() is used
+		onErrFn?.callList([err, fn])
 		return this
 	}
 	
@@ -106,7 +105,7 @@ using concurrent::Actor
 		// lets not make a big deal out of it - just refresh the page
 		// and let the user continue with their life!
 		if (res.status == 403) {
-			Win.cur.reload
+			_doReload()
 			return
 		}
 		
@@ -118,7 +117,7 @@ using concurrent::Actor
 			onResponseFn?.call(res)
 			
 			if (res.headers["Content-Type"] != "text/fog") {
-				onErrFn?.call(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"), fn)
+				callErrFn(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"), fn)
 				return
 			}
 			
@@ -135,12 +134,12 @@ using concurrent::Actor
 			}
 
 			if (msg.isErr) {
-				onErrFn?.call(msg.toErr, fn)
+				callErrFn(msg.toErr, fn)
 				return
 			}
 
 			if (res.status != 200) {
-				onErrFn?.call(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"), fn)
+				callErrFn(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"), fn)
 				return
 			}
 
@@ -148,7 +147,7 @@ using concurrent::Actor
 
 		} catch (Err err) {
 			// don't pass fn() to be called again if it just failed the first time round!
-			onErrFn?.call(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err))
+			callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err), null)
 		}
 	}
 	
@@ -176,6 +175,24 @@ using concurrent::Actor
 	private Void doErr(DomJaxErr err, |DomJaxMsg?|? fn) {
 		Win.cur.alert("${err.errTitle}\n\n${err.errMsg}")
 		fn?.call(err)
+	}
+	
+	** Override hook for server-side testing.
+	@NoDoc
+	virtual Void _doSend(Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| fn) {
+		HttpReq { it.uri = url; it.headers = headers }.send(method, body, fn)
+	}
+
+	** Override hook for server-side testing.
+	@NoDoc
+	virtual Void _doGoto(Uri url) {
+		Win.cur.hyperlink(url)
+	}
+
+	** Override hook for server-side testing.
+	@NoDoc
+	virtual Void _doReload() {
+		Win.cur.reload
 	}
 }
 
@@ -242,6 +259,10 @@ using concurrent::Actor
 	}
 
 	Void goto() {
+		domjax.goto(this)
+	}
+
+	Void gotoVia(DomJax domjax) {
 		domjax.goto(this)
 	}
 }

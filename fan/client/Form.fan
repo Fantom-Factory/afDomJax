@@ -1,3 +1,4 @@
+using dom::Win
 using dom::Elem
 using dom::Event
 
@@ -8,6 +9,8 @@ using dom::Event
 	Elem		elem		{ private set }
 	DomJax		domjax
 	DomJaxReq	req
+
+	
 	
 	new make(Elem formElem, |This|? f := null) {
 		elem	= formElem
@@ -28,6 +31,10 @@ using dom::Event
 				input.style.addClass("isWasValid")
 			}
 		}
+	}
+
+	static new makeFromId(Str formId, |This|? f := null) {
+		Form.make(Win.cur.doc.elemById(formId), f)
 	}
 
 	Uri formAction() {
