@@ -10,8 +10,6 @@ using dom::Event
 	DomJax		domjax
 	DomJaxReq	req
 
-	
-	
 	new make(Elem formElem, |This|? f := null) {
 		elem	= formElem
 		domjax	= DomJax(formElem)
@@ -46,6 +44,7 @@ using dom::Event
 		_onSubmitFn = fn
 	}
 
+	// FIXME onSuccess may be a bad name - also called onFormErrs
 	Void onSuccess(|DomJaxMsg? msg| fn) {
 		_onSuccessFn = fn
 	}
@@ -119,6 +118,9 @@ using dom::Event
 				elem.style.addClass("isWasValid")
 				Hyperform.setMsg(elem, val)
 			}
+			
+			// still call the callback so we can check num of bad logins etc
+			_onSuccessFn(msg)
 		}
 		
 		req.form = formData

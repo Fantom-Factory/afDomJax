@@ -1,12 +1,29 @@
+using afJson
 
+** Non-Const classes not are not allowed const fields - mostly, I believe, because of laziness. 
+** See `https://fantom.org/forum/topic/2758`
+** todo - write my own serialisation framework.
 @Serializable
-@Js const class DomJaxMsg {
+@Js class DomJaxMsg {
 	
 	const Bool isOkay
 	const Bool isFormErrs
 	const Bool isRedirect
 	const Bool isErr
-	const Obj? payload		// there's no reason for DomJaxMsg to be const if I need to pass mutable objects
+	@Transient
+		  Obj?	_payloadCache
+		  Type? _payloadType
+		  Str?  _payload
+
+	@Transient
+	Obj? payload {
+		get {
+			if (_payloadCache == null)
+				_payloadCache = Json().withSerializableMode.fromJson(_payload, _payloadType ?: Obj?#)
+			return _payloadCache
+		}
+		set { _payload = Json().withSerializableMode.toJson(it); _payloadType = it?.typeof ?: Obj?# }
+	}
 	
 	new make(|This|? f := null) { f?.call(this) }
 
@@ -73,7 +90,7 @@
 
 
 @NoDoc
-@Js const class DomJaxFormErrs : DomJaxMsg {
+@Js class DomJaxFormErrs : DomJaxMsg {
 	const Str		errMsg
 	const Str:Str	formMsgs
 	
@@ -85,9 +102,8 @@
 }
 
 
-
 @NoDoc
-@Js const class DomJaxRedirect : DomJaxMsg {
+@Js class DomJaxRedirect : DomJaxMsg {
 	const Uri 		location
 	const Str 		method
 	const Str:Str	form
@@ -101,7 +117,7 @@
 
 
 @NoDoc
-@Js const class DomJaxErr : DomJaxMsg {
+@Js class DomJaxErr : DomJaxMsg {
 	const Str		errTitle
 	const Str		errCode
 	const Str		errMsg

@@ -3,9 +3,13 @@ using dom::HttpReq
 using dom::HttpRes
 using dom::Win
 using concurrent::Actor
+using afJson::Json
 
 @Js class DomJax {
+	// Damn you Brian! - https://fantom.org/forum/topic/2758
+	private static	const Str:Type	msgTypes	:= ["0":DomJaxMsg#, "1":DomJaxFormErrs#, "2":DomJaxRedirect#, "3":DomJaxErr#]
 	private Log		log		:= DomJax#.pod.log
+	private Json	json
 	private Elem?	parent	// FIXME needs to be passed to something to set masks and toasts
 	private	Func?	onResponseFn
 	private	Func?	onFormErrsFn
@@ -14,6 +18,7 @@ using concurrent::Actor
 	
 	new fromParent(Elem? parent) {
 		this.parent = parent
+		this.json	= Json().withSerializableMode
 		
 		onResponse	(Actor.locals["afDomJax.onResponse"	])
 		onFormErrs	(Actor.locals["afDomJax.onFormErrs"	])
@@ -119,8 +124,10 @@ using concurrent::Actor
 				callErrFn(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"), fn)
 				return
 			}
-			
-			msg := (DomJaxMsg) res.content.toBuf.readObj
+
+			// Damn you Brian! - https://fantom.org/forum/topic/2758
+//			msg := (DomJaxMsg) res.content.toBuf.readObj
+			msg := (DomJaxMsg) json.fromJson(res.content[1..-1], msgTypes[res.content.get(0).toChar])
 
 			if (msg.isFormErrs) {
 				onFormErrsFn?.call(msg.toFormErrs)
@@ -145,6 +152,7 @@ using concurrent::Actor
 			fn?.call(msg)
 
 		} catch (Err err) {
+			err.trace
 			// don't pass fn() to be called again if it just failed the first time round!
 			callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err), null)
 		}
