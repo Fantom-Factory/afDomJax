@@ -47,7 +47,6 @@ using concurrent::Actor
 	}
 
 	Void send(DomJaxReq req, |DomJaxMsg|? fn := null) {
-		
 		if (req.form != null) {
 			if (csrfToken != null && req.form != null)
 				req.form = req.form.rw["_csrfToken"] = csrfToken
@@ -176,7 +175,7 @@ using concurrent::Actor
 		Win.cur.alert("${err.errTitle}\n\n${err.errMsg}")
 		fn?.call(err)
 	}
-	
+
 	** Override hook for server-side testing.
 	@NoDoc
 	virtual Void _doSend(Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| fn) {
