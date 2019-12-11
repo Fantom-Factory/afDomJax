@@ -44,7 +44,11 @@ using afJson::Json
 	}
 	
 	Void get(Uri url, |DomJaxMsg|? fn := null) {
-		DomJaxReq(url, this).send(fn)
+		getReq(url).send(fn)
+	}
+
+	Void post(Uri url, |DomJaxMsg|? fn := null) {
+		postReq(url).send(fn)
 	}
 
 	Void postForm(Uri url, Str:Str form, |DomJaxMsg|? fn := null) {
