@@ -55,8 +55,13 @@ using dom::Event
 		set { if (it) elem.removeAttr("novalidate"); else elem.setAttr("novalidate", "") }
 	}
 	
-	private Void doSubmit(Event event) {
-		event.stop
+	** Manually submits the form.
+	Void submit() {
+		doSubmit(null)
+	}
+	
+	private Void doSubmit(Event? event) {
+		event?.stop
 		
 		stop := true
 		try	stop = _onSubmitFn?.call ?: false
@@ -119,7 +124,7 @@ using dom::Event
 				Hyperform.setMsg(elem, val)
 			}
 			
-			// still call the callback so we can check num of bad logins etc
+			// call the callback so we can check num of bad logins etc
 			_onSuccessFn(msg)
 		}
 		
