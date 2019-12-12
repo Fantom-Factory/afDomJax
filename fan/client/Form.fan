@@ -15,13 +15,11 @@ using dom::HttpRes
 	DomJax		domjax
 	DomJaxReq	req
 
-	new make(Elem formElem, |This|? f := null) {
-		elem	= formElem
-		domjax	= DomJax()
-		req		= domjax.postReq(formAction)
+	private new make(Elem formElem, DomJax? domjax := null) {
+		this.elem	= formElem
+		this.domjax	= domjax ?: DomJax()
+		this.req	= this.domjax.postReq(formAction)
 		
-		f?.call(this)	// let users reset domjax / req
-
 		elem["method"]  = "POST"
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
@@ -35,10 +33,16 @@ using dom::HttpRes
 			}
 		}
 	}
+	
+	static new fromElem(Elem elem, DomJax? domjax := null) {
+		if (elem.prop(Form#.qname) == null)
+			elem.setProp(Form#.qname, Form.make(elem, domjax))
+		return elem.prop(Form#.qname)
+	}
 
-	static new makeFromId(Str formId, |This|? f := null) {
-		formElem := Win.cur.doc.elemById(formId) ?: throw Err("Could not find form #${formId}")
-		return Form.make(formElem, f)
+	static new fromId(Str formId, DomJax? domjax := null) {
+		elem := Win.cur.doc.elemById(formId) ?: throw Err("Could not find form #${formId}")
+		return Form.make(elem, domjax)
 	}
 
 	Uri formAction() {
