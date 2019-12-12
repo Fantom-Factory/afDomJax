@@ -17,7 +17,7 @@ using dom::HttpRes
 
 	new make(Elem formElem, |This|? f := null) {
 		elem	= formElem
-		domjax	= DomJax(formElem)
+		domjax	= DomJax()
 		req		= domjax.postReq(formAction)
 		
 		f?.call(this)	// let users reset domjax / req

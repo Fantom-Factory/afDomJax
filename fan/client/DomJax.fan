@@ -10,15 +10,13 @@ using afJson::Json
 	private static	const Str:Type	msgTypes	:= ["0":DomJaxMsg#, "1":DomJaxFormErrs#, "2":DomJaxRedirect#, "3":DomJaxErr#]
 	private Log		log		:= DomJax#.pod.log
 	private Json	json
-	private Elem?	parent	// FIXME needs to be passed to something to set masks and toasts
 	private	Func?	onResponseFn
 	private	Func?	onMsgFn
 	private	Func?	onFormErrsFn
 	private	Func?	onRedirectFn
 	private	Func?	onErrFn
 	
-	new fromParent(Elem? parent) {
-		this.parent = parent
+	new make() {
 		this.json	= Json().withSerializableMode
 		
 		onResponse	(Actor.locals["afDomJax.onResponse"	])
