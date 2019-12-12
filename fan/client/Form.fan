@@ -1,11 +1,16 @@
 using dom::Win
 using dom::Elem
 using dom::Event
+using dom::HttpRes
 
 @Js class Form {
-	private |Obj? res|?	_onSuccessFn
-	private |->Bool|?	_onSubmitFn
-	
+	private Func?	_onSubmitFn
+	private	Func?	_onMsgFn
+	private	Func?	_onFormErrsFn
+	private	Func?	_onRedirectFn
+	private	Func?	_onErrFn
+	private	Func?	_onOkayFn
+
 	Elem		elem		{ private set }
 	DomJax		domjax
 	DomJaxReq	req
@@ -18,7 +23,7 @@ using dom::Event
 		f?.call(this)	// let users reset domjax / req
 
 		elem["method"]  = "POST"
-		
+
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
 		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass("isWasValid") }
 		elem.onEvent("valid",	 false) |e| { e.target.style.addClass("isWasValid") }
@@ -32,7 +37,8 @@ using dom::Event
 	}
 
 	static new makeFromId(Str formId, |This|? f := null) {
-		Form.make(Win.cur.doc.elemById(formId), f)
+		formElem := Win.cur.doc.elemById(formId) ?: throw Err("Could not find form #${formId}")
+		return Form.make(formElem, f)
 	}
 
 	Uri formAction() {
@@ -44,9 +50,24 @@ using dom::Event
 		_onSubmitFn = fn
 	}
 
-	// FIXME onSuccess may be a bad name - also called onFormErrs
-	Void onSuccess(|DomJaxMsg? msg| fn) {
-		_onSuccessFn = fn
+	Void onMsg(|DomJaxMsg| fn) {
+		_onMsgFn = fn
+	}
+
+	Void onRedirect(|DomJaxRedirect?| fn) {
+		_onRedirectFn = fn
+	}
+
+	Void onFormErrs(|DomJaxFormErrs?| fn) {
+		_onFormErrsFn = fn
+	}
+
+	Void onErr(|DomJaxErr?| fn) {
+		_onErrFn = fn
+	}
+
+	Void onOkay(|DomJaxMsg?| fn) {
+		_onOkayFn = fn
 	}
 
 	** Turns form validation off. Usefull for debugging.
@@ -59,6 +80,9 @@ using dom::Event
 	Void submit() {
 		doSubmit(null)
 	}
+	
+	** No-op.
+	Void noop() { }
 	
 	private Void doSubmit(Event? event) {
 		event?.stop
@@ -102,7 +126,7 @@ using dom::Event
 				formData[input->name] = value
 		}
 		
-		domjax.onResponse {
+		domjax.onResponse |httpRes| {
 			// re-enable inputs now, just in case fn throws an err
 			inputs.each |input| {
 				input.style.removeClass("submitting")
@@ -111,6 +135,8 @@ using dom::Event
 					input.style.removeClass("disabled")
 			}
 		}
+		
+		domjax.onMsg(_onMsgFn)
 		
 		domjax.onFormErrs |msg| {
 			if (msgDiv != null) {
@@ -125,10 +151,14 @@ using dom::Event
 			}
 			
 			// call the callback so we can check num of bad logins etc
-			_onSuccessFn(msg)
+			_onFormErrsFn(msg)
 		}
 		
+		// be-careful no to overwrite the standard redirect implementation
+		if (_onRedirectFn != null)
+			domjax.onRedirect(_onRedirectFn)
+		
 		req.form = formData
-		domjax.send(req) |msg| { _onSuccessFn(msg) }
+		domjax.send(req, _onOkayFn)
 	}
 }

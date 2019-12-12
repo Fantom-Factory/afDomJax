@@ -12,6 +12,7 @@ using afJson::Json
 	private Json	json
 	private Elem?	parent	// FIXME needs to be passed to something to set masks and toasts
 	private	Func?	onResponseFn
+	private	Func?	onMsgFn
 	private	Func?	onFormErrsFn
 	private	Func?	onRedirectFn
 	private	Func?	onErrFn
@@ -25,8 +26,8 @@ using afJson::Json
 		onRedirect	(Actor.locals["afDomJax.onRedirect"	])
 		onErr		(Actor.locals["afDomJax.onErr"		])
 		
-		if (this.onRedirectFn	== null)	this.onRedirect		 { doRedirect(it) }
-		if (this.onErrFn 		== null)	this.onErr |err, fn| { doErr(err, fn) }
+		if (this.onRedirectFn	== null)	this.onRedirect		{ doRedirect(it) }
+		if (this.onErrFn 		== null)	this.onErr |err|	{ doErr(err) }
 	}
 
 	@NoDoc
@@ -43,19 +44,19 @@ using afJson::Json
 		DomJaxReq(url, this) { it.method = "POST" }
 	}
 	
-	Void get(Uri url, |DomJaxMsg|? fn := null) {
-		getReq(url).send(fn)
+	Void get(Uri url, |DomJaxMsg|? onOkayFn := null) {
+		getReq(url).send(onOkayFn)
 	}
 
-	Void post(Uri url, |DomJaxMsg|? fn := null) {
-		postReq(url).send(fn)
+	Void post(Uri url, |DomJaxMsg|? onOkayFn := null) {
+		postReq(url).send(onOkayFn)
 	}
 
-	Void postForm(Uri url, Str:Str form, |DomJaxMsg|? fn := null) {
-		postReq(url) { it.form = form }.send(fn)
+	Void postForm(Uri url, Str:Str form, |DomJaxMsg|? onOkayFn := null) {
+		postReq(url) { it.form = form }.send(onOkayFn)
 	}
 
-	Void send(DomJaxReq req, |DomJaxMsg|? fn := null) {
+	Void send(DomJaxReq req, |DomJaxMsg|? onOkayFn := null) {
 		if (req.form != null) {
 			if (csrfToken != null && req.form != null)
 				req.form = req.form.rw["_csrfToken"] = csrfToken
@@ -67,7 +68,7 @@ using afJson::Json
 		req.headers["X-Requested-By"]	= DomJax#.pod.name
 
 		url := req.url
-		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, fn) }
+		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, onOkayFn) }
 	}
 
 	Void goto(DomJaxReq req) {
@@ -76,9 +77,14 @@ using afJson::Json
 		_doGoto(req.url)
 	}
 	
-	// todo - use to clear masks and throbbers regardless of what the server returns
 	This onResponse(|HttpRes|? fn) {
 		this.onResponseFn = fn
+		return this
+	}
+	
+	** Called whenever *any* message is received, regardless of type. 
+	This onMsg(|DomJaxMsg|? fn) {
+		this.onMsgFn = fn
 		return this
 	}
 	
@@ -93,21 +99,19 @@ using afJson::Json
 	}
 	
 	** Implementations should should call fn(err) to inform other listeners of the err.
-//	This onErr(|DomJaxErr, |DomJaxMsg?|? |? fn) {	// This messes with F4
-	This onErr(Func? fn) {
+	This onErr(|DomJaxErr|? fn) {	// This messes with F4
 		this.onErrFn = fn
 		return this
 	}
 	
-	This callErrFn(DomJaxErr err, |DomJaxMsg|? fn := null) {
-		// Brian's weird type system throws NPEs if call() is used
-		onErrFn?.callList([err, fn])
+	This callErrFn(DomJaxErr err) {
+		onErrFn?.call(err)
 		return this
 	}
 	
 	// ----------------------------------------
 	
-	private Void processRes(Uri url, HttpRes res, |DomJaxMsg|? fn) {
+	private Void processRes(Uri url, HttpRes res, |DomJaxMsg|? onOkayFn) {
 
 		// more than likely this is due to a timed out CSRF token
 		// lets not make a big deal out of it - just refresh the page
@@ -125,13 +129,16 @@ using afJson::Json
 			onResponseFn?.call(res)
 			
 			if (res.headers["Content-Type"] != "text/fog") {
-				callErrFn(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"), fn)
+				callErrFn(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"))
 				return
 			}
 
 			// Damn you Brian! - https://fantom.org/forum/topic/2758
 //			msg := (DomJaxMsg) res.content.toBuf.readObj
 			msg := (DomJaxMsg) json.fromJson(res.content[1..-1], msgTypes[res.content.get(0).toChar])
+
+			// always call this
+			onMsgFn?.call(msg)
 
 			if (msg.isFormErrs) {
 				onFormErrsFn?.call(msg.toFormErrs)
@@ -144,25 +151,26 @@ using afJson::Json
 			}
 
 			if (msg.isErr) {
-				callErrFn(msg.toErr, fn)
+				callErrFn(msg.toErr)
 				return
 			}
 
 			if (res.status != 200) {
-				callErrFn(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"), fn)
+				callErrFn(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
 				return
 			}
 
-			fn?.call(msg)
+			onOkayFn?.call(msg)
 
 		} catch (Err err) {
 			err.trace
 			// don't pass fn() to be called again if it just failed the first time round!
-			callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err), null)
+			callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err))
 		}
 	}
 	
-	private Void doRedirect(DomJaxRedirect redirect) {
+	** Public so it may be invoked manually
+	static Void doRedirect(DomJaxRedirect redirect) {
 		if (redirect.method == "GET")
 			return Win.cur.hyperlink(redirect.location)
 		
@@ -183,9 +191,8 @@ using afJson::Json
 		return
 	}
 	
-	private Void doErr(DomJaxErr err, |DomJaxMsg?|? fn) {
+	private Void doErr(DomJaxErr err) {
 		Win.cur.alert("${err.errTitle}\n\n${err.errMsg}")
-		fn?.call(err)
 	}
 
 	** Override hook for server-side testing.
@@ -261,12 +268,12 @@ using afJson::Json
 		return uri
 	}
 
-	Void send(|DomJaxMsg|? fn := null) {
-		domjax.send(this, fn)
+	Void send(|DomJaxMsg|? onOkayFn := null) {
+		domjax.send(this, onOkayFn)
 	}
 
-	Void sendVia(DomJax domjax, |DomJaxMsg|? fn := null) {
-		domjax.send(this, fn)
+	Void sendVia(DomJax domjax, |DomJaxMsg|? onOkayFn := null) {
+		domjax.send(this, onOkayFn)
 	}
 
 	Void goto() {
