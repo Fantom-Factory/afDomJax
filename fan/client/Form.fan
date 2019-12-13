@@ -15,7 +15,7 @@ using dom::HttpRes
 	DomJax		domjax
 	DomJaxReq	req
 
-	private new make(Elem formElem, DomJax? domjax := null) {
+	private new _make(Elem formElem, DomJax? domjax := null) {
 		this.elem	= formElem
 		this.domjax	= domjax ?: DomJax()
 		this.req	= this.domjax.postReq(formAction)
@@ -33,19 +33,17 @@ using dom::HttpRes
 			}
 		}
 	}
+
+	static new fromSelector(Str selector, DomJax? domjax := null) {
+		elem := Win.cur.doc.querySelector(selector)
+		if (elem == null) throw Err("Could not find Form: ${selector}")
+		return fromElem(elem, domjax)
+	}
 	
 	static new fromElem(Elem elem, DomJax? domjax := null) {
 		if (elem.prop(Form#.qname) == null)
-			elem.setProp(Form#.qname, Form.make(elem, domjax))
+			elem.setProp(Form#.qname, Form._make(elem, domjax))
 		return elem.prop(Form#.qname)
-	}
-
-	static new fromSelector(Str selector, DomJax? domjax := null) {
-		elem := selector[0].isAlpha
-			? Win.cur.doc.elemById(selector)
-			: Win.cur.doc.querySelector(selector)
-		if (elem == null) throw Err("Could not find Form: ${selector}")
-		return Form.make(elem, domjax)
 	}
 
 	Uri formAction() {
