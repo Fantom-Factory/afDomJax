@@ -155,7 +155,7 @@ using dom::HttpRes
 			}
 			
 			// call the callback so we can check num of bad logins etc
-			_onFormErrsFn(msg)
+			_onFormErrsFn?.call(msg)
 		}
 		
 		// be-careful no to overwrite the standard redirect implementation

@@ -96,8 +96,7 @@ using afJson::Json
 		return this
 	}
 	
-	** Implementations should should call fn(err) to inform other listeners of the err.
-	This onErr(|DomJaxErr|? fn) {	// This messes with F4
+	This onErr(|DomJaxErr|? fn) {
 		this.onErrFn = fn
 		return this
 	}
@@ -161,7 +160,6 @@ using afJson::Json
 			onOkayFn?.call(msg)
 
 		} catch (Err err) {
-			err.trace
 			// don't pass fn() to be called again if it just failed the first time round!
 			callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing server response", err))
 		}
