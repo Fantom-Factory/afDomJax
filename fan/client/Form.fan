@@ -40,8 +40,11 @@ using dom::HttpRes
 		return elem.prop(Form#.qname)
 	}
 
-	static new fromId(Str formId, DomJax? domjax := null) {
-		elem := Win.cur.doc.elemById(formId) ?: throw Err("Could not find form #${formId}")
+	static new fromSelector(Str selector, DomJax? domjax := null) {
+		elem := selector[0].isAlpha
+			? Win.cur.doc.elemById(selector)
+			: Win.cur.doc.querySelector(selector)
+		if (elem == null) throw Err("Could not find Form: ${selector}")
 		return Form.make(elem, domjax)
 	}
 
