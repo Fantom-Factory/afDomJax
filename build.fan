@@ -5,7 +5,7 @@ class Build : BuildPod {
 	new make() {
 		podName = "afDomJax"
 		summary = "My Awesome domJax project"
-		version = Version("0.0.2")
+		version = Version("0.0.3")
 
 		meta = [
 			"pod.dis"		: "DomJax",
@@ -20,6 +20,7 @@ class Build : BuildPod {
 			"sys        1.0.73 - 1.0",
 			"concurrent 1.0.73 - 1.0",
 			"dom        1.0.73 - 1.0",
+			"util       1.0.73 - 1.0",
 
 			// ---- Fantom Factory Core ---------
 			"afIoc        3.0.8  - 3.0",
