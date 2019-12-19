@@ -106,24 +106,26 @@ using dom::HttpRes
 		// and FormData is multi-part only
 		formData := Str:Str[:]
 		inputs	 := Elem[,]
-		elem.querySelectorAll("input, submit, button").each |input| {
+		elem.querySelectorAll("input, select, submit, button").each |input| {
 			if (!input.enabled) return
 
 			// disable inputs until we get a server response, to prevent multiple submits
 			inputs.add(input)
 			input.style.addClass("submitting")
 			input.enabled = false
-			if (input.style.hasClass("domkit-Button"))
-				input.style.addClass("disabled")
+			if (input["type"] == "submit")
+				input.setProp("disabled", true)
 
 			// if we're able to submit, the inputs should be valid
 			Hyperform.setMsg(input, "")
 
 			value := null
 			// let's submit sensible values for Checkbox, Radio, et al
-			switch (input.attr("type")?.lower) {
+			switch (input.attr("type")?.lower ?: input.tagName.lower) {
 				case "checkbox"	: value = input->checked->toStr
 				case "radio"	: value = input->checked == true ? input->value : null
+				// https://stackoverflow.com/questions/14333797/finding-which-option-is-selected-in-select-without-jquery
+				case "select"	: value = input.querySelector("option:checked")->value
 				default			: value = input->value
 			}
 
@@ -136,8 +138,8 @@ using dom::HttpRes
 			inputs.each |input| {
 				input.style.removeClass("submitting")
 				input.enabled = true
-				if (input.style.hasClass("domkit-Button"))
-					input.style.removeClass("disabled")
+				if (input["type"] == "submit")
+					input.setProp("disabled", false)
 			}
 		}
 		
