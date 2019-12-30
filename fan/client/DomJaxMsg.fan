@@ -10,19 +10,13 @@ using afJson
 	const Bool isFormErrs
 	const Bool isRedirect
 	const Bool isErr
-	@Transient
-		  Obj?	_payloadCache
-		  Type? _payloadType
-		  Str?  _payload
+	
+	private DomJaxMsgMap?	_payload
 
 	@Transient
-	Obj? payload {
-		get {
-			if (_payloadCache == null)
-				_payloadCache = Json().withSerializableMode.fromJson(_payload, _payloadType ?: Obj?#)
-			return _payloadCache
-		}
-		set { _payload = Json().withSerializableMode.toJson(it); _payloadType = it?.typeof ?: Obj?# }
+	[Str:Obj?]? payload {
+		get { _payload?.toMap }
+		set { _payload = it == null ? null : DomJaxMsgMap(it) }
 	}
 	
 	new make(|This|? f := null) { f?.call(this) }
@@ -74,8 +68,6 @@ using afJson
 			it.cause		= cause
 		}
 	}
-	
-	[Str:Obj?]? payloadMap() { payload }
 	
 	@NoDoc	DomJaxFormErrs	toFormErrs()	{ this }
 	@NoDoc	DomJaxRedirect	toRedirect()	{ this }
@@ -131,3 +123,65 @@ using afJson
 		"DomJax Err: ${errType} - ${errMsg}"
 	}
 }
+
+@Js internal class DomJaxMsgMap {
+	Str[]	keys
+	Str?[]	vals
+	Type?[]	valTypes
+	
+	@Transient
+	[Str:Obj?]? cache
+	
+	new make(|This| f) { f(this) }
+	
+	new fromMap(Str:Obj? map) {
+		cache	= map
+		keys	= Str[,] 
+		vals	= Str?[,] 
+		valTypes= Type?[,] 
+		json   := Json().withSerializableMode
+		map.keys.each |key, i| {
+			val := map[key]
+			keys.add(key)
+			valTypes.add(val?.typeof)
+			vals.add(json.toJson(val))
+		}
+	}
+	
+	Str:Obj? toMap() {
+		if (cache == null) {
+			json := Json().withSerializableMode
+			map	 := Str:Obj?[:] { it.ordered = true }
+			keys.each |key, i| {
+				map[key] = json.fromJson(vals[i], valTypes[i])
+			}
+			cache = map.rw	// let users know they can't change it!
+		}
+		return cache
+	}
+}
+
+//@Js internal class DomJaxMsgList {
+//	Obj?[]	vals
+//	Type[]	valTypes
+//	
+//	new make(|This| f) { f(this) }
+//	
+//	new fromList(Obj?[] list) {
+//		vals 		= Obj?[,]
+//		valTypes	= Type[,]
+//		json := Json().withSerializableMode
+//		vals.each |val, i| {
+//			valTypes.add(val?.typeof ?: Obj?#)
+//			vals	.add(json.toJson(val))
+//		}
+//	}
+//
+//	Obj?[] toList() {
+//		json := Json().withSerializableMode
+//		list := vals.map |val, i| {
+//			json.fromJson(val, valTypes[i])
+//		}
+//		return list
+//	}
+//}
