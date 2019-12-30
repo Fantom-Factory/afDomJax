@@ -69,16 +69,10 @@ using afJson::Json
 		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, onOkayFn) }
 	}
 
-	Void gotoUrl(Uri url) {
+	Void goto(Uri url) {
 		_doGoto(url)
 	}
 
-	Void goto(DomJaxReq req) {
-		if (req.method != "GET")
-			throw Err("Can only 'goto' GET requests - ${req.method} methods may return a redirect")
-		_doGoto(req.url)
-	}
-	
 	This onResponse(|HttpRes|? fn) {
 		this.onResponseFn = fn
 		return this
@@ -276,11 +270,15 @@ using afJson::Json
 		domjax.send(this, onOkayFn)
 	}
 
-	Void goto() {
-		domjax.goto(this)
+	Void goto2() {
+		if (method != "GET")
+			throw Err("Can only 'goto' GET requests")
+		domjax._doGoto(this.url)
 	}
 
 	Void gotoVia(DomJax domjax) {
-		domjax.goto(this)
+		if (method != "GET")
+			throw Err("Can only 'goto' GET requests")
+		domjax._doGoto(this.url)
 	}
 }
