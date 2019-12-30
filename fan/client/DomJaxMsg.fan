@@ -21,8 +21,8 @@ using afJson
 	
 	new make(|This|? f := null) { f?.call(this) }
 
-	static new makeOkay() {
-		DomJaxMsg { it.isOkay = true }
+	static new makeOkay([Str:Obj?]? payload := null) {
+		DomJaxMsg { it.isOkay = true; it.payload = payload }
 	}
 
 	static new makeFormErrs([Str:Str]? formMsgs, Str? errMsg := null, [Str:Obj?]? payload := null) {
