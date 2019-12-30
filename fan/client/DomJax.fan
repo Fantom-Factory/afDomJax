@@ -69,6 +69,10 @@ using afJson::Json
 		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, onOkayFn) }
 	}
 
+	Void gotoUrl(Uri url) {
+		_doGoto(url)
+	}
+
 	Void goto(DomJaxReq req) {
 		if (req.method != "GET")
 			throw Err("Can only 'goto' GET requests - ${req.method} methods may return a redirect")
