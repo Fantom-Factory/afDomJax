@@ -124,6 +124,13 @@ using afJson::Json
 			onResponseFn?.call(res)
 			
 			if (res.headers["Content-Type"] != "text/fog") {
+				// if it's not a fog, it's probably a server error, or a 404, or summut...
+				if (res.status != 200) {
+					callErrFn(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
+					return
+				}
+
+				// nope - it's genuinely a content error! 
 				callErrFn(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"))
 				return
 			}
