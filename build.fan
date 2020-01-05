@@ -30,7 +30,7 @@ class Build : BuildPod {
 			// ---- Fantom Factory Web ----------
 			"afBedSheet   1.5.14 - 1.5",
 			"afDuvet      1.1.8  - 1.1",
-			"afJson       2.0.4  - 2.0",
+			"afJson       2.0.6  - 2.0",
 		]
 
 		srcDirs = [`fan/`, `fan/bedsheet/`, `fan/client/`]
