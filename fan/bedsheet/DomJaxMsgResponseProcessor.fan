@@ -6,7 +6,6 @@ using afBedSheet::ResponseProcessor
 using afJson::Json
 
 internal const class DomJaxMsgResponseProcessor : ResponseProcessor {
-	static	private const Type:Str		msgTypes	:= [DomJaxMsg#:"0", DomJaxFormErrs#:"1", DomJaxRedirect#:"2", DomJaxErr#:"3"]
 	@Inject private const HttpRequest	httpReq
 	@Inject private const HttpResponse	httpRes
 			private const Json			jsonConv
@@ -21,7 +20,7 @@ internal const class DomJaxMsgResponseProcessor : ResponseProcessor {
 		if (csrfToken != null)
 			httpRes.headers["X-csrfToken"] = csrfToken
 
-		json := msgTypes[response.typeof] + jsonConv.toJson(response)
+		json := jsonConv.toJson(response)
 		return Text.fromContentType(json, MimeType("text/fog"))
 	}
 }

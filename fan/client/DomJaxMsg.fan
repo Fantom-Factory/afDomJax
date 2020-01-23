@@ -2,7 +2,7 @@ using afJson
 
 ** Non-Const classes not are not allowed const fields - mostly, I believe, because of laziness. 
 ** See `https://fantom.org/forum/topic/2758`
-** todo - write my own serialisation framework.
+** todo - write 'afPickle' - my own serialisation framework.
 @Serializable
 @Js class DomJaxMsg {
 	

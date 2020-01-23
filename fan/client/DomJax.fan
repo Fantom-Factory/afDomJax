@@ -7,7 +7,7 @@ using afJson::Json
 
 @Js class DomJax {
 	// Damn you Brian! - https://fantom.org/forum/topic/2758
-	private static	const Str:Type	msgTypes	:= ["0":DomJaxMsg#, "1":DomJaxFormErrs#, "2":DomJaxRedirect#, "3":DomJaxErr#]
+	private Type	_type	:= this.typeof
 	private Log		log		:= DomJax#.pod.log
 	private Json	json
 	private	Func?	onResponseFn
@@ -137,7 +137,7 @@ using afJson::Json
 
 			// Damn you Brian! - https://fantom.org/forum/topic/2758
 //			msg := (DomJaxMsg) res.content.toBuf.readObj
-			msg := (DomJaxMsg) json.fromJson(res.content[1..-1], msgTypes[res.content.get(0).toChar])
+			msg := (DomJaxMsg) json.fromJson(res.content, DomJaxMsg#)
 
 			// always call this
 			onMsgFn?.call(msg)
