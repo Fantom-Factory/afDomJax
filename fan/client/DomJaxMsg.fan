@@ -5,11 +5,11 @@ using afJson
 ** todo - write 'afPickle' - my own serialisation framework.
 @Serializable
 @Js class DomJaxMsg {
-	
-	const Bool isOkay
-	const Bool isFormErrs
-	const Bool isRedirect
-	const Bool isErr
+	private		Type _type		:= this.typeof
+		const	Bool isOkay
+		const	Bool isFormErrs
+		const	Bool isRedirect
+		const	Bool isErr
 	
 	private DomJaxMsgMap?	_payload
 

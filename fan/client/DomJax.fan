@@ -6,8 +6,6 @@ using concurrent::Actor
 using afJson::Json
 
 @Js class DomJax {
-	// Damn you Brian! - https://fantom.org/forum/topic/2758
-	private Type	_type	:= this.typeof
 	private Log		log		:= DomJax#.pod.log
 	private Json	json
 	private	Func?	onResponseFn
