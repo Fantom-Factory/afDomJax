@@ -123,14 +123,14 @@ using afJson::Json
 			
 			if (res.headers["Content-Type"] != "text/fog") {
 				// if it's not a fog, it's probably a server error, or a 404, or summut...
-				if (res.status != 200) {
-					callErrFn(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
-					return
-				}
+				if (res.status == 500)
+					return callErrFn(DomJaxMsg.makeServerErr("Server Error: ${res.status}", "When contacting: ${url}"))
+
+				if (res.status != 200)
+					return callErrFn(DomJaxMsg.makeHttpErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
 
 				// nope - it's genuinely a content error! 
-				callErrFn(DomJaxMsg.makeClientErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"))
-				return
+				return callErrFn(DomJaxMsg.makeHttpErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"))
 			}
 
 			// Damn you Brian! - https://fantom.org/forum/topic/2758
@@ -156,7 +156,7 @@ using afJson::Json
 			}
 
 			if (res.status != 200) {
-				callErrFn(DomJaxMsg.makeClientErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
+				callErrFn(DomJaxMsg.makeHttpErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
 				return
 			}
 

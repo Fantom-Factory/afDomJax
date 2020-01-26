@@ -55,6 +55,17 @@ using afJson
 			it.errMsg		= msg
 			// don't show server side stack traces to the client!
 			it.errType		= cause?.typeof?.qname
+			it.isServerErr	= true
+		}
+	}
+
+	static new makeHttpErr(Str code, Str msg) {
+		DomJaxErr {
+			it.isErr		= true
+			it.errTitle		= "Server Error"
+			it.errCode		= code
+			it.errMsg		= msg
+			it.isHttpErr	= true
 		}
 	}
 
@@ -66,6 +77,7 @@ using afJson
 			it.errMsg		= msg
 			it.errType		= cause?.typeof?.qname
 			it.cause		= cause
+			it.isClientErr	= true
 		}
 	}
 	
@@ -114,6 +126,9 @@ using afJson
 	const Str		errCode
 	const Str		errMsg
 	const Str?		errType
+	const Bool		isServerErr
+	const Bool		isHttpErr
+	const Bool		isClientErr
 	@Transient
 	const Err?		cause
 	
@@ -124,6 +139,7 @@ using afJson
 	}
 }
 
+// TODO may not need this now afJson has dynamic typing?
 @Js internal class DomJaxMsgMap {
 	Str[]	keys
 	Str?[]	vals
