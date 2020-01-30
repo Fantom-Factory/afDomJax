@@ -5,7 +5,7 @@ class Build : BuildPod {
 	new make() {
 		podName = "afDomJax"
 		summary = "My Awesome domJax project"
-		version = Version("0.0.5")
+		version = Version("0.0.6")
  
 		meta = [
 			"pod.dis"		: "DomJax",
