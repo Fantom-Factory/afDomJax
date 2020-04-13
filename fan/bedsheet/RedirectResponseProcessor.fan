@@ -3,7 +3,7 @@ using afIoc::Scope
 using afBedSheet::Text
 using afBedSheet::HttpRequest
 using afBedSheet::HttpResponse
-using afBedSheet::Redirect
+using afBedSheet::HttpRedirect
 using afBedSheet::ResponseProcessor
 
 internal const class RedirectResponseProcessor : ResponseProcessor {
@@ -13,14 +13,14 @@ internal const class RedirectResponseProcessor : ResponseProcessor {
 	
 	new make(Scope scope, |This| f) {
 		f(this)
-		this.origProcessor = scope.build(Type.find("afBedSheet::RedirectProcessor"))
+		this.origProcessor = scope.build(Type.find("afBedSheet::HttpRedirectProcessor"))
 	}
 	
 	override Obj process(Obj response) {
 		if (!httpReq.isXmlHttpRequest || httpReq.headers["X-Requested-By"] != DomJax#.pod.name)
 			return origProcessor.process(response)
 		
-		redirect	:= (Redirect) response
+		redirect	:= (HttpRedirect) response
 		statusCode	:= redirect.type.statusCode(httpReq.httpVersion)
 		reMethod	:= (statusCode == 307 || statusCode == 308) ? httpReq.httpMethod : "GET"
 		return DomJaxMsg.makeRedirect(redirect.location, reMethod)

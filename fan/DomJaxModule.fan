@@ -1,5 +1,5 @@
 using afIoc
-using afBedSheet::Redirect
+using afBedSheet::HttpRedirect
 using afBedSheet::ResponseProcessors
 using afBedSheet::GzipCompressible
 
@@ -13,8 +13,8 @@ const class DomJaxModule {
 
 	@Contribute { serviceType=ResponseProcessors# }
 	Void contributeResponseProcessors(Configuration config) {
-		config[DomJaxMsg#] = 			config.build(DomJaxMsgResponseProcessor#)
-		config.overrideValue(Redirect#,	config.build(RedirectResponseProcessor#))
+		config[DomJaxMsg#] = 				config.build(DomJaxMsgResponseProcessor#)
+		config.overrideValue(HttpRedirect#,	config.build(RedirectResponseProcessor#))
 	}
 	
 	@Contribute { serviceType=GzipCompressible# }
@@ -22,4 +22,3 @@ const class DomJaxModule {
 		config[MimeType("text/fog")] = true
 	}
 }
-	

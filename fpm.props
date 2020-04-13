@@ -1,4 +1,4 @@
 
 # ---- Actual Config ----------------------------------------------------------
 
-fanrRepo.work		= ${repoWork}
+fanrRepo.work				= ${repoWork}

@@ -5,7 +5,7 @@ class Build : BuildPod {
 	new make() {
 		podName = "afDomJax"
 		summary = "My Awesome domJax project"
-		version = Version("0.0.6")
+		version = Version("0.0.8")
  
 		meta = [
 			"pod.dis"		: "DomJax",
@@ -17,10 +17,10 @@ class Build : BuildPod {
 
 		depends = [
 			// ---- Fantom Core -----------------
-			"sys        1.0.73 - 1.0",
-			"concurrent 1.0.73 - 1.0",
-			"dom        1.0.73 - 1.0",
-			"util       1.0.73 - 1.0",
+			"sys          1.0.73 - 1.0",
+			"concurrent   1.0.73 - 1.0",
+			"dom          1.0.73 - 1.0",
+			"util         1.0.73 - 1.0",
 
 			// ---- Fantom Factory Core ---------
 			"afIoc        3.0.8  - 3.0",
@@ -28,8 +28,8 @@ class Build : BuildPod {
 			"afIocConfig  1.1.0  - 1.1",
 
 			// ---- Fantom Factory Web ----------
-			"afBedSheet   1.5.14 - 1.5",
-			"afDuvet      1.1.8  - 1.1",
+			"afBedSheet   1.5.16 - 1.5",
+			"afDuvet      1.1.10 - 1.1",
 			"afJson       2.0.8  - 2.0",
 		]
 

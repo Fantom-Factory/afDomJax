@@ -90,6 +90,8 @@ using dom::HttpRes
 	Void noop() { }
 	
 	private Void doSubmit(Event? event) {
+		// meh - this does nothing.
+		//if (event != null && event.target.tagName != "a")
 		event?.stop
 		
 		stop := true
