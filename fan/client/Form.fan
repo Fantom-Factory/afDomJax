@@ -108,7 +108,7 @@ using dom::HttpRes
 		// and FormData is multi-part only
 		formData := Str:Str[:]
 		inputs	 := Elem[,]
-		elem.querySelectorAll("input, select, submit, button").each |input| {
+		elem.querySelectorAll("input, select, submit, button, textarea").each |input| {
 			if (!input.enabled) return
 
 			// disable inputs until we get a server response, to prevent multiple submits
