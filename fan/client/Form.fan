@@ -47,7 +47,7 @@ using dom::HttpRes
 	}
 
 	Uri formAction() {
-		Uri.decode(elem["action"])
+		Uri.decode(elem["action"] ?: throw Err("Form #${elem.id} does not define an action attr"))
 	}
 
 	** A callback fn that can stop the form submission by returning 'true'. 
