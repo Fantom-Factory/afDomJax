@@ -8,7 +8,7 @@ fan.afDomJax.HyperformPeer.setMsg = function(elem, msg) {
 
 	// prevent stack-overflow errors
 	if (msg === "" && element.validity.valid)
-		return
+		return;
 
 	element.setCustomValidity(msg);
 	element.reportValidity();
