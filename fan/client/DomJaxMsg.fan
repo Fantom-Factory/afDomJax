@@ -59,12 +59,12 @@ using afJson
 		}
 	}
 
-	static new makeHttpErr(Str title, Str msg) {
+	static new makeHttpErr(Int code, Uri url) {
 		DomJaxErr {
 			it.isErr		= true
-			it.errTitle		= title
-			it.errCode		= ""
-			it.errMsg		= msg
+			it.errTitle		= "HTTP Error: ${code}"
+			it.errCode		= code.toStr
+			it.errMsg		= "When contacting: ${url}"
 			it.isHttpErr	= true
 		}
 	}

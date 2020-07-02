@@ -120,17 +120,24 @@ using afJson::Json
 				csrfToken = res.headers["X-csrfToken"]
 
 			onResponseFn?.call(res)
-			
+
 			if (res.headers["Content-Type"] != "text/fog") {
 				// if it's not a fog, it's probably a server error, or a 404, or summut...
 				if (res.status == 500)
 					return callErrFn(DomJaxMsg.makeServerErr("Server Error: ${res.status}", "When contacting: ${url}"))
 
 				if (res.status != 200)
-					return callErrFn(DomJaxMsg.makeHttpErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
+					// status is 0 if DomJax could NOT connect to server
+					return callErrFn(DomJaxMsg.makeHttpErr(res.status, url))
 
-				// nope - it's genuinely a content error! 
-				return callErrFn(DomJaxMsg.makeHttpErr("HTTP Content Error", "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"))
+				// nope - it's genuinely a content error! Mimic a HttpErr
+				return callErrFn(DomJaxErr {
+					it.isErr		= true
+					it.errTitle		= "HTTP Content Error"
+					it.errCode		= res.status.toStr
+					it.errMsg		= "Unsupported Content-Type " + res.headers["Content-Type"] + " at ${url}"
+					it.isHttpErr	= true
+				})
 			}
 
 			// Damn you Brian! - https://fantom.org/forum/topic/2758
@@ -156,7 +163,7 @@ using afJson::Json
 			}
 
 			if (res.status != 200) {
-				callErrFn(DomJaxMsg.makeHttpErr("HTTP Error: ${res.status}", "When contacting: ${url}"))
+				callErrFn(DomJaxMsg.makeHttpErr(res.status, url))
 				return
 			}
 
