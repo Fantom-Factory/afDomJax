@@ -126,6 +126,7 @@ using afJson
 	const Str		errCode
 	const Str		errMsg
 	const Str?		errType
+	const Str?		errDetail	// it may be useful to display an OpErr's details in the browser
 	const Bool		isServerErr
 	const Bool		isHttpErr
 	const Bool		isClientErr
