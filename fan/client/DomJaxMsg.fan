@@ -47,7 +47,7 @@ using afJson
 		}
 	}
 
-	static new makeServerErr(Str code, Str msg, Err? cause := null) {
+	static new makeServerErr(Str code, Str msg, Err? cause := null, Str? detail := null) {
 		DomJaxErr {
 			it.isErr		= true
 			it.errTitle		= "Server Error"
@@ -55,6 +55,7 @@ using afJson
 			it.errMsg		= msg
 			// don't show server side stack traces to the client!
 			it.errType		= cause?.typeof?.qname
+			it.errDetail	= detail
 			it.isServerErr	= true
 		}
 	}
