@@ -3,11 +3,10 @@ using dom::HttpReq
 using dom::HttpRes
 using dom::Win
 using concurrent::Actor
-using afJson::Json
+using afPickle::Pickle
 
 @Js class DomJax {
 	private Log		log		:= DomJax#.pod.log
-	private Json	json
 	private	Func?	onResponseFn
 	private	Func?	onMsgFn
 	private	Func?	onFormErrsFn
@@ -15,8 +14,6 @@ using afJson::Json
 	private	Func?	onErrFn
 	
 	new make() {
-		this.json	= Json().withSerializableMode
-		
 		onResponse	(Actor.locals["afDomJax.onResponse"	])
 		onFormErrs	(Actor.locals["afDomJax.onFormErrs"	])
 		onRedirect	(Actor.locals["afDomJax.onRedirect"	])
@@ -141,8 +138,7 @@ using afJson::Json
 			}
 
 			// Damn you Brian! - https://fantom.org/forum/topic/2758
-//			msg := (DomJaxMsg) res.content.toBuf.readObj
-			msg := (DomJaxMsg) json.fromJson(res.content, DomJaxMsg#)
+			msg := (DomJaxMsg) Pickle.readObj(res.content)
 
 			// always call this
 			onMsgFn?.call(msg)

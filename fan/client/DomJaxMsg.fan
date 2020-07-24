@@ -1,23 +1,11 @@
-using afJson
 
-** Non-Const classes not are not allowed const fields - mostly, I believe, because of laziness. 
-** See `https://fantom.org/forum/topic/2758`
-** todo - write 'afPickle' - my own serialisation framework.
 @Serializable
 @Js class DomJaxMsg {
-	private		Type _type		:= this.typeof
-		const	Bool isOkay
-		const	Bool isFormErrs
-		const	Bool isRedirect
-		const	Bool isErr
-	
-	private DomJaxMsgMap?	_payload
-
-	@Transient
-	[Str:Obj?]? payload {
-		get { _payload?.toMap }
-		set { _payload = it == null ? null : DomJaxMsgMap(it) }
-	}
+		const	Bool	isOkay
+		const	Bool	isFormErrs
+		const	Bool	isRedirect
+		const	Bool	isErr
+		[Str:Obj?]?		payload
 	
 	new make(|This|? f := null) { f?.call(this) }
 
@@ -140,66 +128,3 @@ using afJson
 		"DomJax Err: ${errType} - ${errMsg}"
 	}
 }
-
-// TODO may not need this now afJson has dynamic typing?
-@Js internal class DomJaxMsgMap {
-	Str[]	keys
-	Str?[]	vals
-	Type?[]	valTypes
-	
-	@Transient
-	[Str:Obj?]? cache
-	
-	new make(|This| f) { f(this) }
-	
-	new fromMap(Str:Obj? map) {
-		cache	= map
-		keys	= Str[,] 
-		vals	= Str?[,] 
-		valTypes= Type?[,] 
-		json   := Json().withSerializableMode
-		map.keys.each |key, i| {
-			val := map[key]
-			keys.add(key)
-			valTypes.add(val?.typeof)
-			vals.add(json.toJson(val))
-		}
-	}
-	
-	Str:Obj? toMap() {
-		if (cache == null) {
-			json := Json().withSerializableMode
-			map	 := Str:Obj?[:] { it.ordered = true }
-			keys.each |key, i| {
-				map[key] = json.fromJson(vals[i], valTypes[i])
-			}
-			cache = map.rw	// let users know they can't change it!
-		}
-		return cache
-	}
-}
-
-//@Js internal class DomJaxMsgList {
-//	Obj?[]	vals
-//	Type[]	valTypes
-//	
-//	new make(|This| f) { f(this) }
-//	
-//	new fromList(Obj?[] list) {
-//		vals 		= Obj?[,]
-//		valTypes	= Type[,]
-//		json := Json().withSerializableMode
-//		vals.each |val, i| {
-//			valTypes.add(val?.typeof ?: Obj?#)
-//			vals	.add(json.toJson(val))
-//		}
-//	}
-//
-//	Obj?[] toList() {
-//		json := Json().withSerializableMode
-//		list := vals.map |val, i| {
-//			json.fromJson(val, valTypes[i])
-//		}
-//		return list
-//	}
-//}
