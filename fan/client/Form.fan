@@ -75,14 +75,24 @@ using dom::HttpRes
 		_onOkayFn = fn
 	}
 
-	** Turns form validation off. Usefull for debugging.
+	** Turns form validation off. Useful for debugging.
 	Bool validate {
 		get { elem.attr("novalidate") == null }
 		set { if (it) elem.removeAttr("novalidate"); else elem.setAttr("novalidate", "") }
 	}
 	
+	** Returns 'true' if all inputs are valid. 
+	** 
+	** If 'report' is 'true' then input errors are reported to the user.
+	Bool isValid(Bool report := false) {
+		report ? Hyperform.reportValidity(elem) : Hyperform.checkValidity(elem)
+	}
+	
 	** Manually submits the form.
-	Void submit() {
+	Void submit(Bool force := false, Bool report := true) {
+		if (!force)
+			if (!isValid(report))
+				return
 		doSubmit(null)
 	}
 	
