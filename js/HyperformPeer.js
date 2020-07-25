@@ -18,3 +18,11 @@ fan.afDomJax.HyperformPeer.setMsg = function(elem, msg) {
 	// and let the normal valid / invalid event do their job
 	element.setCustomValidity("");
 }
+
+fan.afDomJax.HyperformPeer.checkValidity = function(elem) {
+	return elem.peer.elem.checkValidity()
+}
+
+fan.afDomJax.HyperformPeer.reportValidity = function(elem) {
+	return elem.peer.elem.reportValidity()
+}
