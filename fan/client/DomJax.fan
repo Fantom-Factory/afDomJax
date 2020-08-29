@@ -12,7 +12,17 @@ using afPickle::Pickle
 	private	Func?	onFormErrsFn
 	private	Func?	onRedirectFn
 	private	Func?	onErrFn
+
+	** Number of request retries on short-lived connection errors.
+			Int		maxRetries  := 3 {
+				set { if (it < 0) throw ArgErr("maxRetries must be > 0: $it"); &maxRetries = it }
+			}
 	
+	@NoDoc
+		// Firefox XHR requests time out after 6 secs, Chrome in 2 secs (or less)!
+		// It's fine to keep trying, we just need to respond to the user after a reasonable amount of time
+		Duration	maxResponseTime	:= 3sec
+
 	new make() {
 		onResponse	(Actor.locals["afDomJax.onResponse"	])
 		onFormErrs	(Actor.locals["afDomJax.onFormErrs"	])
@@ -50,18 +60,7 @@ using afPickle::Pickle
 	}
 
 	Void send(DomJaxReq req, |DomJaxMsg|? onOkayFn := null) {
-		if (req.form != null) {
-			if (csrfToken != null && req.form != null)
-				req.form = req.form.rw["_csrfToken"] = csrfToken
-			req.body = Uri.encodeQuery(req.form)
-			req.headers["Content-Type"] = "application/x-www-form-urlencoded"
-		}
-		
-		req.headers["X-Requested-With"] = "XMLHttpRequest"
-		req.headers["X-Requested-By"]	= DomJax#.pod.name
-
-		url := req.url
-		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, onOkayFn) }
+		req._toMiniReq(maxRetries, maxResponseTime, csrfToken) { processRes(req.url, it, onOkayFn) }.send
 	}
 
 	Void goto(Uri url) {
@@ -239,8 +238,9 @@ using afPickle::Pickle
 	Uri url() {
 		url := this._url
 		if (this.context != null) {
+			// replace "*" in URL with context segments
 			context := this.context
-			if (context != null && url.pathStr.contains("*")) {
+			if (url.pathStr.contains("*")) {
 				path := url.path.map {
 					// maybe we should be doing some value encoding here?
 					it == "*" ? (context.remove(0) ?: "null"): it	// how does BedSheet decode nulls?
@@ -288,5 +288,73 @@ using afPickle::Pickle
 		if (method != "GET")
 			throw Err("Can only 'goto' GET requests")
 		domjax._doGoto(this.url)
+	}
+	
+	internal DomJaxMiniReq _toMiniReq(Int maxRetries, Duration maxResponseTime, Str? csrfToken, |HttpRes| resFn) {
+		if (form != null) {
+			if (csrfToken != null)
+				form = form.rw["_csrfToken"] = csrfToken
+			body = Uri.encodeQuery(form)
+			headers["Content-Type"] = "application/x-www-form-urlencoded"
+		}
+		
+		headers["X-Requested-With"] = "XMLHttpRequest"
+		headers["X-Requested-By"]	= DomJax#.pod.name
+		
+		return DomJaxMiniReq(maxRetries, maxResponseTime, method, url, headers, body, resFn)
+	}
+}
+
+@Js internal class DomJaxMiniReq {
+	private Log			log				:= DomJax#.pod.log
+	private Duration	maxResponseTime
+	private Int			maxRetries
+	private	Str			method
+	private	Uri			url
+	private	Str:Str		headers
+	private	Obj?		body
+	private	|HttpRes|	resFn
+	private Duration[]	startTimes
+	
+	new make(Int maxRetries, Duration maxResponseTime, Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| resFn) {
+		this.maxRetries			= maxRetries
+		this.maxResponseTime	= maxResponseTime
+		this.method				= method
+		this.url				= url
+		this.headers			= headers
+		this.body				= body
+		this.resFn				= resFn
+		this.startTimes			= Duration[,]
+	}
+	
+	Void send() {
+		startTimes.push(Duration.now)
+		HttpReq { it.uri = this.url; it.headers = this.headers }.send(method, body) |HttpRes res| {
+			
+			// a HTTP status of 0 typically means a connection error
+			if (res.status == 0) {
+				log.warn("HTTP 0 Err - Dodgy connectivity suspected")
+				log.warn("HTTP 0 Err - Response returned in ${(Duration.now - startTimes.peek).toLocale}")
+				
+				// we get random connection issues that seem to return immediately
+				// so just try again if that happens
+				if ((Duration.now - startTimes.peek) < maxResponseTime) {
+					
+					// don't keep trying forever - so put a cap on it!
+					if (startTimes.size <= maxRetries) {
+						log.warn("HTTP 0 Err - Retrying attempt No. ${startTimes.size}")
+						
+						// do it again, but better!
+						send()
+						return
+					} else
+						log.warn("HTTP 0 Err - Max retries exceeded: ${startTimes.size} > ${maxRetries}")
+				} else
+					log.warn("HTTP 0 Err - Not retrying, the long response time indicates a real error")
+			}
+			
+			// success!
+			resFn(res)
+		}
 	}
 }
