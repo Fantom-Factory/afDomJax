@@ -33,6 +33,12 @@ using afPickle::Pickle
 		if (this.onErrFn 		== null)	this.onErr |err|	{ doErr(err) }
 	}
 
+	** Turns HTTP Request / Response debugging on and off.
+	Bool debug {
+		get { log.isDebug }
+		set { log.level = it ? LogLevel.debug : LogLevel.info }
+	}
+	
 	@NoDoc
 	Str? csrfToken {
 		get { Actor.locals["afDomJax.csrfToken"] }
@@ -60,7 +66,17 @@ using afPickle::Pickle
 	}
 
 	Void send(DomJaxReq req, |DomJaxMsg|? onOkayFn := null) {
-		req._toMiniReq(maxRetries, maxResponseTime, csrfToken) { processRes(req.url, it, onOkayFn) }.send
+		req._prepare(csrfToken)
+		
+		url := req.url
+		if (log.isDebug) {
+			reqUrl := url.scheme == null ? "" : url.scheme + "://"
+			reqUrl += url.auth ?: ""
+			reqUrl = reqUrl.size > 0 ? " to: $reqUrl" : ":"
+			log.debug("\n\nDomJax HTTP Request$reqUrl\n\n${req.dumpToStr}\n")
+		}
+
+		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, onOkayFn) }
 	}
 
 	Void goto(Uri url) {
@@ -198,8 +214,8 @@ using afPickle::Pickle
 
 	** Override hook for server-side testing.
 	@NoDoc
-	virtual Void _doSend(Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| fn) {
-		HttpReq { it.uri = url; it.headers = headers }.send(method, body, fn)
+	virtual Void _doSend(Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| resFn) {
+		DomJaxMiniReq(maxRetries, maxResponseTime, method, url, headers, body, resFn).send
 	}
 
 	** Override hook for server-side testing.
@@ -239,11 +255,11 @@ using afPickle::Pickle
 		url := this._url
 		if (this.context != null) {
 			// replace "*" in URL with context segments
-			context := this.context
+			context := this.context.dup
 			if (url.pathStr.contains("*")) {
 				path := url.path.map {
 					// maybe we should be doing some value encoding here?
-					it == "*" ? (context.remove(0) ?: "null"): it	// how does BedSheet decode nulls?
+					it == "*" ? (context.removeAt(0) ?: "null"): it	// how does BedSheet decode nulls?
 				}
 				url = _newPath(url, path)
 			}
@@ -290,7 +306,25 @@ using afPickle::Pickle
 		domjax._doGoto(this.url)
 	}
 	
-	internal DomJaxMiniReq _toMiniReq(Int maxRetries, Duration maxResponseTime, Str? csrfToken, |HttpRes| resFn) {
+	** Dumps a debug string that in some way resembles the HTTP request.
+	This dump() {
+		echo(dumpToStr)
+		return this
+	}
+	
+	** Returns a debug string that in some way resembles the HTTP request.
+	Str dumpToStr() {
+		out := "${method} ${url.relToAuth.encode} HTTP/1.1\n"
+		headers.each |v, k| { out += "${k}: ${v}\n" }
+		out += "\n"
+		if (body != null) {
+			out += body.toStr 
+			out += "\n"
+		}
+		return out
+	}
+	
+	internal This _prepare(Str? csrfToken) {
 		if (form != null) {
 			if (csrfToken != null)
 				form = form.rw["_csrfToken"] = csrfToken
@@ -300,8 +334,7 @@ using afPickle::Pickle
 		
 		headers["X-Requested-With"] = "XMLHttpRequest"
 		headers["X-Requested-By"]	= DomJax#.pod.name
-		
-		return DomJaxMiniReq(maxRetries, maxResponseTime, method, url, headers, body, resFn)
+		return this
 	}
 }
 
@@ -351,6 +384,17 @@ using afPickle::Pickle
 						log.warn("HTTP 0 Err - Max retries exceeded: ${startTimes.size} > ${maxRetries}")
 				} else
 					log.warn("HTTP 0 Err - Not retrying, the long response time indicates a real error")
+			}
+			
+			if (log.isDebug) {
+				out := "HTTP/1.1 ${res.status}\n"
+				res.headers.each |v, k| { out += "${k}: ${v}\n" }
+				out += "\n"
+				if (res.content.trimToNull != null) {
+					out += res.content
+					out += "\n"
+				}
+				log.debug("\n\nDomJax HTTP Response:\n\n${out}\n")
 			}
 			
 			// success!
