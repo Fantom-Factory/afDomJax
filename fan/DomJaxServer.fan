@@ -8,7 +8,7 @@ const class DomJaxServer {
 
 	new make(|This| f) { f(this) }
 	
-	** Injects JS code to initialise Hyperform.
+	** Injects JS code to initialise Hyperform in the browser.
 	** 
 	** If not specified, 'opts' defaults to '{revalidate:"hybrid", classes:{...bootstrap-classes...}}'.
 	** 

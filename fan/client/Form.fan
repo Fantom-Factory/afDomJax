@@ -11,6 +11,10 @@ using dom::HttpRes
 	private	Func?	_onErrFn
 	private	Func?	_onOkayFn
 
+			Str				validationCssClass	:= "isWasValid"
+	|Elem form|?			hideErrMsgFn
+	|Elem form, Str msg|?	showErrMsgFn
+	
 	Elem		elem		{ private set }
 	DomJax		domjax
 	DomJaxReq	req
@@ -23,13 +27,26 @@ using dom::HttpRes
 		elem["method"]  = "POST"
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
-		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass("isWasValid") }
-		elem.onEvent("valid",	 false) |e| { e.target.style.addClass("isWasValid") }
+		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass(validationCssClass) }
+		elem.onEvent("valid",	 false) |e| { e.target.style.addClass(validationCssClass) }
 		elem.onEvent("submit",	 false) |e| { doSubmit(e) }		
 		elem.onEvent("validate", false) |e| {
 			// ensure we can see all the form validation errors 
 			elem.querySelectorAll("input").each |input| {
-				input.style.addClass("isWasValid")
+				input.style.addClass(validationCssClass)
+			}
+		}
+		
+		// default show / hide errMsgFns - not everyone will have the CSS .form-invalid, .errMsg, .d-none
+		errDiv	:= formElem.querySelector(".form-invalid")
+		if (errDiv != null) {
+			hideErrMsgFn = |Elem elem| {
+				errDiv.style.addClass("d-none")
+			}
+			showErrMsgFn = |Elem elem, Str errMsg| {
+				errDiv.style.removeClass("d-none")
+				msgDiv := errDiv.querySelector(".errMsg")
+				if (msgDiv != null) msgDiv.text = errMsg
 			}
 		}
 	}
@@ -111,8 +128,7 @@ using dom::HttpRes
 		if (stop) return
 
 		// hide any err msg - as it shouldn't be valid anymore
-		msgDiv := elem.querySelector(".form-invalid")
-		msgDiv?.style?.addClass("d-none")
+		hideErrMsgFn?.call(elem)
 
 		// shame the browser can't gather form data for us... :(
 		// and FormData is multi-part only
@@ -158,14 +174,11 @@ using dom::HttpRes
 		domjax.onMsg(_onMsgFn)
 		
 		domjax.onFormErrs |msg| {
-			if (msgDiv != null) {
-				msgDiv.querySelector(".errMsg").text = msg.errMsg
-				msgDiv.style.removeClass("d-none")
-			}
+			showErrMsgFn?.call(elem, msg.errMsg)
 	
 			msg.formMsgs.each |val, key| {
 				elem := elem.querySelector("[name=${key}]") 
-				elem.style.addClass("isWasValid")
+				elem.style.addClass(validationCssClass)
 				Hyperform.setMsg(elem, val)
 			}
 			

@@ -16,7 +16,7 @@ internal const class DomJaxMsgResponseProcessor : ResponseProcessor {
 		if (csrfToken != null)
 			httpRes.headers["X-csrfToken"] = csrfToken
 
-		fog := Pickle.writeObj(response, ["usings":["sys", "afDomJax"], "skipNulls":true, "skipDefaults":true])
+		fog := Pickle.writeObj(response, ["usings":["sys", "afDomJax"], "skipNulls":true])
 		return Text.fromContentType(fog, MimeType("text/fog"))
 	}
 }
