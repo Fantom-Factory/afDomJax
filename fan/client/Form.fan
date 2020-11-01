@@ -11,10 +11,13 @@ using dom::HttpRes
 	private	Func?	_onErrFn
 	private	Func?	_onOkayFn
 
-			Str				validationCssClass	:= "isWasValid"
-	|Elem form|?			hideErrMsgFn
-	|Elem form, Str msg|?	showErrMsgFn
-	
+	** CSS class applied to the form (and input) upon validation.
+			Str				cssValidated	:= "isWasValid"
+	** CSS class applied to the form upon submitting a request. (Use to hide form error divs.)
+			Str				cssValid		:= "is-valid"
+	** CSS class applied to the form upon receiving a DomJax FormErrMsg response.
+			Str				cssInvalid		:= "is-invalid"
+
 	Elem		elem		{ private set }
 	DomJax		domjax
 	DomJaxReq	req
@@ -27,39 +30,28 @@ using dom::HttpRes
 		elem["method"]  = "POST"
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
-		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass(validationCssClass) }
-		elem.onEvent("valid",	 false) |e| { e.target.style.addClass(validationCssClass) }
+		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass(cssValidated) }
+		elem.onEvent("valid",	 false) |e| { e.target.style.addClass(cssValidated) }
 		elem.onEvent("submit",	 false) |e| { doSubmit(e) }		
 		elem.onEvent("validate", false) |e| {
 			// ensure we can see all the form validation errors 
 			elem.querySelectorAll("input").each |input| {
-				input.style.addClass(validationCssClass)
-			}
-		}
-		
-		// default show / hide errMsgFns - not everyone will have the CSS .form-invalid, .errMsg, .d-none
-		errDiv	:= formElem.querySelector(".form-invalid")
-		if (errDiv != null) {
-			hideErrMsgFn = |Elem elem| {
-				errDiv.style.addClass("d-none")
-			}
-			showErrMsgFn = |Elem elem, Str errMsg| {
-				errDiv.style.removeClass("d-none")
-				msgDiv := errDiv.querySelector(".errMsg")
-				if (msgDiv != null) msgDiv.text = errMsg
+				input.style.addClass(cssValidated)
 			}
 		}
 	}
 
-	static new fromSelector(Str selector, DomJax? domjax := null) {
-		elem := Win.cur.doc.querySelector(selector)
-		if (elem == null) throw Err("Could not find Form: ${selector}")
-		return fromElem(elem, domjax)
-	}
-	
-	static new fromElem(Elem elem, DomJax? domjax := null) {
+	** 'selector' may be an 'Elem' or a Str selector.
+	static new make(Obj selector, DomJax? domjax := null) {
+		elem := selector as Elem
+		if (elem == null) {
+			elem = Win.cur.doc.querySelector(selector)
+			if (elem == null) throw Err("Could not find Form: ${selector}")
+		}
+
 		if (elem.prop(Form#.qname) == null)
 			elem.setProp(Form#.qname, Form._make(elem, domjax))
+
 		return elem.prop(Form#.qname)
 	}
 
@@ -127,8 +119,9 @@ using dom::HttpRes
 			domjax.callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing form submission", err))
 		if (stop) return
 
-		// hide any err msg - as it shouldn't be valid anymore
-		hideErrMsgFn?.call(elem)
+		// hide any form level err msgs - as they shouldn't be applicable anymore
+		// (as in, why would we be submitting an invalid form!?)
+		elem.style.removeClass(cssInvalid).addClass(cssValid)
 
 		// shame the browser can't gather form data for us... :(
 		// and FormData is multi-part only
@@ -174,11 +167,12 @@ using dom::HttpRes
 		domjax.onMsg(_onMsgFn)
 		
 		domjax.onFormErrs |msg| {
-			showErrMsgFn?.call(elem, msg.errMsg)
-	
+			elem.style.removeClass(cssValid).addClass(cssInvalid)	//.addClass(cssValidated)	// reserve isWasValid just for inputs - the CSS usually adds an icon
+
 			msg.formMsgs.each |val, key| {
 				elem := elem.querySelector("[name=${key}]") 
-				elem.style.addClass(validationCssClass)
+				elem.style.addClass(cssInvalid)
+				elem.style.addClass(cssValidated)
 				Hyperform.setMsg(elem, val)
 			}
 			
