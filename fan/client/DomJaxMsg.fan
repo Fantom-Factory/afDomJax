@@ -17,12 +17,8 @@
 		DomJaxFormErrs {
 			it.isFormErrs	= true
 			it.formMsgs		= formMsgs	?: emptyMap
-			it.errMsg		= errMsg	?: ""
+			it.errMsg		= errMsg
 			it.payload		= payload
-			if (it.errMsg.isEmpty && it.formMsgs.size == 1)
-				it.errMsg	= it.formMsgs.vals.first
-			if (it.errMsg.isEmpty)
-				it.errMsg	= "Check the details below"
 		}
 	}
 
@@ -84,10 +80,21 @@
 
 @NoDoc
 @Js class DomJaxFormErrs : DomJaxMsg {
-	const Str		errMsg
+	const Str?		errMsg
 	const Str:Str	formMsgs
 	
 	new make(|This| f) : super(f) { }
+
+	** Returns a non-null error msg to display in forms.
+	Str formMsg() {
+		// this should be client logic, but it exists to ease backwards compatibility with a non-null errMsg...
+		errMsg := this.errMsg ?: ""
+		if (errMsg.isEmpty && formMsgs.size == 1)
+			errMsg	= formMsgs.vals.first
+		if (errMsg.isEmpty)
+			errMsg	= "Check the details below"
+		return errMsg
+	}
 
 	override Str toStr() {
 		"DomJax FormErrs: ${errMsg} ${formMsgs}"
