@@ -14,7 +14,7 @@ const class DomJaxModule {
 	@Contribute { serviceType=ResponseProcessors# }
 	Void contributeResponseProcessors(Configuration config) {
 		config[DomJaxMsg#] = 				config.build(DomJaxMsgResponseProcessor#)
-		config.overrideValue(HttpRedirect#,	config.build(RedirectResponseProcessor#))
+		config.overrideValue(HttpRedirect#,	config.build(RedirectResponseProcessor#), "afDomJax.HttpRedirect")
 	}
 	
 	@Contribute { serviceType=GzipCompressible# }
