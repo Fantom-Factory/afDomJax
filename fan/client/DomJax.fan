@@ -27,6 +27,7 @@ using afPickle::Pickle
 		onResponse	(Actor.locals["afDomJax.onResponse"	])
 		onFormErrs	(Actor.locals["afDomJax.onFormErrs"	])
 		onRedirect	(Actor.locals["afDomJax.onRedirect"	])
+		onMsg		(Actor.locals["afDomJax.onMsg"		])
 		onErr		(Actor.locals["afDomJax.onErr"		])
 		
 		if (this.onRedirectFn	== null)	this.onRedirect		{ doRedirect(it) }

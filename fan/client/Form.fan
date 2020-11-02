@@ -164,7 +164,9 @@ using dom::HttpRes
 			}
 		}
 		
-		domjax.onMsg(_onMsgFn)
+		// be-careful not to overwrite any existing DomJax onMsgFn
+		if (_onMsgFn != null)
+			domjax.onMsg(_onMsgFn)
 		
 		domjax.onFormErrs |msg| {
 			elem.style.removeClass(cssValid).addClass(cssInvalid)	//.addClass(cssValidated)	// reserve isWasValid just for inputs - the CSS usually adds an icon
