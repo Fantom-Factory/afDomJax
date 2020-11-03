@@ -66,9 +66,9 @@
 		}
 	}
 	
-	@NoDoc	DomJaxFormErrs	toFormErrs()	{ this }
-	@NoDoc	DomJaxRedirect	toRedirect()	{ this }
-	@NoDoc	DomJaxErr		toErr()			{ this }
+	DomJaxFormErrs	toFormErrs()	{ this }
+	DomJaxRedirect	toRedirect()	{ this }
+	DomJaxErr		toErr()			{ this }
 	
 	private static const Str:Str emptyMap	:= Str:Str[:].toImmutable
 	
@@ -78,7 +78,6 @@
 }
 
 
-@NoDoc
 @Js class DomJaxFormErrs : DomJaxMsg {
 	const Str?		errMsg
 	const Str:Str	formMsgs
@@ -102,7 +101,6 @@
 }
 
 
-@NoDoc
 @Js class DomJaxRedirect : DomJaxMsg {
 	const Uri 		location
 	const Str 		method
@@ -116,7 +114,6 @@
 }
 
 
-@NoDoc
 @Js class DomJaxErr : DomJaxMsg {
 	const Str		errTitle
 	const Str		errCode
