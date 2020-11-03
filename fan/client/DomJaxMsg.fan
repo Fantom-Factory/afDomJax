@@ -70,6 +70,11 @@
 	DomJaxRedirect	toRedirect()	{ this }
 	DomJaxErr		toErr()			{ this }
 	
+	@Operator
+	Obj? get(Str key, Obj? def := null) {
+		payload == null ? def : payload.get(key, def)
+	}
+	
 	private static const Str:Str emptyMap	:= Str:Str[:].toImmutable
 	
 	override Str toStr() {
