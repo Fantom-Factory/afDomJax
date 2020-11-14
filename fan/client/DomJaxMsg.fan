@@ -90,7 +90,7 @@
 	new make(|This| f) : super(f) { }
 
 	** Returns a non-null error msg to display in forms.
-	Str formMsg() {
+	Str formErr() {
 		// this should be client logic, but it exists to ease backwards compatibility with a non-null errMsg...
 		errMsg := this.errMsg ?: ""
 		if (errMsg.isEmpty && formMsgs.size == 1)
@@ -99,6 +99,9 @@
 			errMsg	= "Check the details below"
 		return errMsg
 	}
+
+	@NoDoc @Deprecated { msg="Use formErr() instead" }
+	Str formMsg() { formErr }
 
 	override Str toStr() {
 		"DomJax FormErrs: ${errMsg} ${formMsgs}"
