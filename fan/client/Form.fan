@@ -60,7 +60,7 @@ using dom::HttpRes
 	}
 
 	** A callback fn that can stop the form submission by returning 'true'. 
-	Void onSubmit(|->Bool| fn) {
+	Void onSubmit(|Str:Str formData->Bool| fn) {
 		_onSubmitFn = fn
 	}
 
@@ -109,20 +109,8 @@ using dom::HttpRes
 	Void noop() { }
 	
 	private Void doSubmit(Event? event) {
-		// meh - this does nothing.
-		//if (event != null && event.target.tagName != "a")
 		event?.stop
 		
-		stop := true
-		try	stop = _onSubmitFn?.call ?: false
-		catch (Err err)
-			domjax.callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing form submission", err))
-		if (stop) return
-
-		// hide any form level err msgs - as they shouldn't be applicable anymore
-		// (as in, why would we be submitting an invalid form!?)
-		elem.style.removeClass(cssInvalid).addClass(cssValid)
-
 		// shame the browser can't gather form data for us... :(
 		// and FormData is multi-part only
 		formData := Str:Str[:]
@@ -153,6 +141,16 @@ using dom::HttpRes
 			if (value != null)
 				formData[input->name] = value
 		}
+		
+		stop := true
+		try	stop = _onSubmitFn?.call(formData) ?: false
+		catch (Err err)
+			domjax.callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing form submission", err))
+		if (stop) return
+
+		// hide any form level err msgs - as they shouldn't be applicable anymore
+		// (as in, why would we be submitting an invalid form!?)
+		elem.style.removeClass(cssInvalid).addClass(cssValid)
 		
 		domjax.onResponse |httpRes| {
 			// re-enable inputs now, just in case fn throws an err
