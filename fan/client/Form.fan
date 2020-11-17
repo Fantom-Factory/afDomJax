@@ -60,28 +60,34 @@ using dom::HttpRes
 	}
 
 	** A callback fn that can stop the form submission by returning 'true'. 
-	Void onSubmit(|Str:Str formData->Bool| fn) {
+	This onSubmit(|Str:Str formData->Bool| fn) {
 		_onSubmitFn = fn
+		return this
 	}
 
-	Void onMsg(|DomJaxMsg| fn) {
+	This onMsg(|DomJaxMsg| fn) {
 		_onMsgFn = fn
+		return this
 	}
 
-	Void onRedirect(|DomJaxRedirect?| fn) {
+	This onRedirect(|DomJaxRedirect?| fn) {
 		_onRedirectFn = fn
+		return this
 	}
 
-	Void onFormErrs(|DomJaxFormErrs?| fn) {
+	This onFormErrs(|DomJaxFormErrs?| fn) {
 		_onFormErrsFn = fn
+		return this
 	}
 
-	Void onErr(|DomJaxErr?| fn) {
+	This onErr(|DomJaxErr?| fn) {
 		_onErrFn = fn
+		return this
 	}
 
-	Void onOkay(|DomJaxMsg?| fn) {
+	This onOkay(|DomJaxMsg?| fn) {
 		_onOkayFn = fn
+		return this
 	}
 
 	** Turns form validation off. Useful for debugging.
