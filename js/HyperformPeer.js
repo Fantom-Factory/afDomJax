@@ -13,10 +13,9 @@ fan.afDomJax.HyperformPeer.setMsg = function(elem, msg) {
 	element.setCustomValidity(msg);
 	element.reportValidity();
 
-	// user error messages are sticky, meaning the input remains invalid
-	// until we manually clear the error msg. So we may as well do it now
-	// and let the normal valid / invalid event do their job
-	element.setCustomValidity("");
+	// note that user error messages are sticky, meaning the input remains
+	// invalid until we manually clear the error msg (with a blank string)
+	//element.setCustomValidity("");
 }
 
 fan.afDomJax.HyperformPeer.checkValidity = function(elem) {
