@@ -210,7 +210,7 @@ using afPickle::Pickle
 	}
 	
 	private Void doErr(DomJaxErr err) {
-		Win.cur.alert("${err.errTitle}\n\n${err.errMsg}")
+		DomJaxErrHandler().onDomJaxErr(err)
 	}
 
 	** Override hook for server-side testing.
@@ -295,12 +295,14 @@ using afPickle::Pickle
 		domjax.send(this, onOkayFn)
 	}
 
-	Void goto2() {
+	** Navigate to the page.
+	Void goto() {
 		if (method != "GET")
 			throw Err("Can only 'goto' GET requests")
 		domjax._doGoto(this.url)
 	}
 
+	** Navigate to the page.
 	Void gotoVia(DomJax domjax) {
 		if (method != "GET")
 			throw Err("Can only 'goto' GET requests")
