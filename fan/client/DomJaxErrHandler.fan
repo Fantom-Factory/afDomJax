@@ -28,13 +28,13 @@ using concurrent::Actor
 		fn?.call(this)
 
 		if (clientErrTitle	.isEmpty)	clientErrTitle	= "Shazbot! The computer reported an error!"
-		if (clientErrMsg	.isEmpty)	clientErrMsg	= "Don't worry, it's not your fault - it's ours!\n\nSteve can fix it (he can fix anything!) but he needs to know about it first. Just drop us a quick email telling us what happened and Steve will do his best.\n\nCheers,\n\nFantom Factory.".replace("\n", "<br>")
+		if (clientErrMsg	.isEmpty)	clientErrMsg	= "Don't worry, it's not your fault - it's ours!\n\nRefresh the page and try again".replace("\n", "<br>")
 		if (serverErrTitle	.isEmpty)	serverErrTitle	= "Shazbot! The mainframe reported an error!"
-		if (serverErrMsg	.isEmpty)	serverErrMsg	= "Don't worry, it's not your fault - it's ours!\n\nSteve can fix it (he can fix anything!) and I've just sent him all the detail he needs - but contact us if it's urgent and we'll poke Steve in to action!\n\nCheers,\n\nFantom Factory".replace("\n", "<br>")
+		if (serverErrMsg	.isEmpty)	serverErrMsg	= "Don't worry, it's not your fault - it's ours!\n\nRefresh the page and try again".replace("\n", "<br>")
 		if (opErrTitle		.isEmpty)	opErrTitle		= "Shazbot!"
-		if (opErrMsg		.isEmpty)	opErrMsg		= "Misson Control couldn't complete your request, they say:\n\n<b><center>{err-msg-here}</center></b>\nContact us if this doesn't sound right.\n\nFantom Factory".replace("\n", "<br>")
+		if (opErrMsg		.isEmpty)	opErrMsg		= "Misson Control couldn't complete your request, they say:\n\n<b><center>{err-msg-here}</center></b>\nContact us if this doesn't sound right.".replace("\n", "<br>")
 		if (netErrTitle		.isEmpty)	netErrTitle		= "Could not connect to server"
-		if (netErrMsg		.isEmpty)	netErrMsg		= "Your browser is having problems connecting to our server.\n\nTry again to re-establish a connection. If you see this error regularly, it may indicate poor network quality or a connection issue.".replace("\n", "<br>")
+		if (netErrMsg		.isEmpty)	netErrMsg		= "Try again and I'll attempt to re-establish a connection.\n\nIf you see this error regularly, it may indicate poor network quality or a connection issue.".replace("\n", "<br>")
 
 		onClientErr		(Actor.locals["afDomJax.onClientErr"])
 		onOpenErrDialog	(Actor.locals["afDomJax.onOpenErrDialog"])
@@ -73,7 +73,7 @@ using concurrent::Actor
 		callClientErr(err.cause ?: Err("Unknown DomJaxErr: $err.errType - $err.errMsg"))
 	}
 	
-	This onOpenErrDialog(|Str, Str|? fn) {
+	This onOpenErrDialog(|Str title, Str msg|? fn) {
 		this.onOpenErrDialogFn = fn
 		return this
 	}
