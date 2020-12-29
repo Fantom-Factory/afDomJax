@@ -39,7 +39,7 @@ using concurrent::Actor
 		onClientErr		(Actor.locals["afDomJax.onClientErr"])
 		onOpenErrDialog	(Actor.locals["afDomJax.onOpenErrDialog"])
 		
-		if (this.onClientErrFn		== null) this.onClientErrFn		|err|			{ doClientErr(err) }
+		if (this.onClientErrFn		== null) this.onClientErr		|err|			{ doClientErr(err) }
 		if (this.onOpenErrDialogFn	== null) this.onOpenErrDialog	|title, msg|	{ doOpenErrDialog(title, msg) }
 	}
 	
