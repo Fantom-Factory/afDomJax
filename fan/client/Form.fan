@@ -157,17 +157,7 @@ using dom::KeyFrames
 				formData[input->name] = value
 		}
 		
-		stop := true
-		try	stop = _onSubmitFn?.call(formData, this) ?: false
-		catch (Err err)
-			domjax.callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing form submission", err))
-		if (stop) return
-
-		// hide any form level err msgs - as they shouldn't be applicable anymore
-		// (as in, why would we be submitting an invalid form!?)
-		elem.style.removeClass(cssInvalid).addClass(cssValid)
-		
-		domjax.onResponse |httpRes| {
+		enableInputsFn := |->| {
 			// re-enable inputs as soon as, just in case fn throws an err
 			inputs.each |input| {
 				input.style.removeClass("submitting")
@@ -175,6 +165,24 @@ using dom::KeyFrames
 				if (input["type"] == "submit")
 					input.setProp("disabled", false)
 			}
+		}
+		
+		stop := true
+		try	stop = _onSubmitFn?.call(formData, this) ?: false
+		catch (Err err)
+			domjax.callErrFn(DomJaxMsg.makeClientErr("Client Error", "When processing form submission", err))
+
+		if (stop) {
+			enableInputsFn()
+			return
+		}
+
+		// hide any form level err msgs - as they shouldn't be applicable anymore
+		// (as in, why would we be submitting an invalid form!?)
+		elem.style.removeClass(cssInvalid).addClass(cssValid)
+		
+		domjax.onResponse |httpRes| {
+			enableInputsFn()
 		}
 		
 		// be-careful not to overwrite any existing DomJax onMsgFn
