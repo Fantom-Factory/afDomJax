@@ -187,7 +187,10 @@ using dom::KeyFrames
 		
 		// be-careful not to overwrite any existing DomJax onMsgFn
 		if (_onMsgFn != null)
-			domjax.onMsg { _onMsgFn(it, this) }
+			domjax.onMsg {
+				// given this is an async fn - double check it still exists!
+				_onMsgFn?.call(it, this)
+			}
 
 		domjax.onFormErrs |msg| {
 			elem.style.removeClass(cssValid).addClass(cssInvalid)	//.addClass(cssValidated)	// reserve isWasValid just for inputs - the CSS usually adds an icon
@@ -207,13 +210,22 @@ using dom::KeyFrames
 		
 		// be-careful not to overwrite the standard redirect implementation
 		if (_onRedirectFn != null)
-			domjax.onRedirect { _onRedirectFn(it, this) }
+			domjax.onRedirect {
+				// given this is an async fn - double check it still exists!
+				_onRedirectFn?.call(it, this)
+			}
 		
+		// be-careful not to overwrite any existing DomJax onMsgFn
 		if (_onErrFn != null)
-			domjax.onErr { _onErrFn(it, this) }
+			domjax.onErr {
+				// given this is an async fn - double check it still exists!
+				_onErrFn?.call(it, this)
+			}
 		
 		req.form = formData
-		domjax.send(req) { _onOkayFn(it, this) }
+		domjax.send(req) {
+			_onOkayFn?.call(it, this)
+		}
 	}
 
 	private Elem[] allFormInputs() {
