@@ -32,7 +32,7 @@ using concurrent::Actor
 		if (serverErrTitle	.isEmpty)	serverErrTitle	= "Shazbot! The mainframe reported an error!"
 		if (serverErrMsg	.isEmpty)	serverErrMsg	= "Don't worry, it's not your fault - it's ours!\n\nRefresh the page and try again".replace("\n", "<br>")
 		if (opErrTitle		.isEmpty)	opErrTitle		= "Shazbot!"
-		if (opErrMsg		.isEmpty)	opErrMsg		= "Misson Control couldn't complete your request, they say:\n\n<b><center>{err-msg-here}</center></b>\nContact us if this doesn't sound right.".replace("\n", "<br>")
+		if (opErrMsg		.isEmpty)	opErrMsg		= "Misson Control couldn't complete your request, they say:\n\n<b><center>{err-msg}</center></b>\nContact us if this doesn't sound right.".replace("\n", "<br>")
 		if (netErrTitle		.isEmpty)	netErrTitle		= "Could not connect to server"
 		if (netErrMsg		.isEmpty)	netErrMsg		= "Try again and I'll attempt to re-establish a connection.\n\nIf you see this error regularly, it may indicate poor network quality or a connection issue.".replace("\n", "<br>")
 
@@ -48,7 +48,12 @@ using concurrent::Actor
 		if (err.isHttpErr) {
 			if (err.toErr.errCode == "0") {
 				log.err(err.errTitle + "\n" + err.errMsg)
-				callOpenErrDialog(netErrTitle, netErrMsg)
+				callOpenErrDialog(
+					netErrTitle,
+					netErrMsg
+						.replace("{err-code}",	err.errCode)
+						.replace("{err-msg}",	err.errMsg)
+				)
 				return 
 			}
 			callOpenErrDialog(err.errTitle, err.errMsg)
@@ -58,14 +63,25 @@ using concurrent::Actor
 		// Server Op Errs should be auto-reported - make OpErrs pod agnostic
 		if (err.isServerErr && err.errType.endsWith("::OpErr")) {
 			log.err(err.errCode)
-			callOpenErrDialog(opErrTitle, opErrMsg.replace("{err-msg-here}", err.errMsg))
+			callOpenErrDialog(
+				opErrTitle,
+				opErrMsg
+					.replace("{err-code}",		err.errCode)
+					.replace("{err-msg}",		err.errMsg)
+					.replace("{err-msg-here}",	err.errMsg)		// legacy
+			)
 			return
 		}
 
 		// Server Errs should be auto-reported
 		if (err.isServerErr) {
 			log.err(err.errCode)
-			callOpenErrDialog(serverErrTitle, serverErrMsg)
+			callOpenErrDialog(
+				serverErrTitle,
+				serverErrMsg
+					.replace("{err-code}",		err.errCode)
+					.replace("{err-msg}",		err.errMsg)
+			)
 			return
 		}
 
@@ -93,7 +109,10 @@ using concurrent::Actor
 
 	private Void doClientErr(Err? cause := null) {
 		log.err("As caught by DomJax", cause)
-		callOpenErrDialog(clientErrTitle, clientErrMsg)
+		callOpenErrDialog(
+			clientErrTitle,
+			clientErrMsg
+		)
 		if (cause != null)
 			throw cause
 	}
