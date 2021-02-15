@@ -48,6 +48,14 @@ using dom::KeyFrames
 			if (shakeInvalidInputs)
 				shakyShaky(e.target)
 		}
+		allFormInputs.each {
+			it.onEvent("focus",	 false) |e| {
+				// if people are typing - let the input look valid
+				// don't judge the input before it's submitted!
+				e.target.style.removeClass(cssValidated).removeClass(cssValid).removeClass(cssInvalid)
+				Hyperform.setMsg(e.target, "")
+			}			
+		}
 	}
 
 	** 'selector' may be an 'Elem' or a Str selector.
