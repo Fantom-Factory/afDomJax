@@ -23,7 +23,7 @@ const class DomJaxServer {
 								"validated"	: "was-validated",	// this should really go on the parent form
 							]
 						]
-		injector.injectScript.fromLocalUrl(`/pod/afDomJax/res/hyperform-0.11.0.min.js`)
+		injector.injectScript.fromLocalUrl(`/pod/afDomJax/res/hyperform-0.12.0.min.js`)
 		injector.injectScript.withScript("hyperform(window, " + JsonOutStream.writeJsonToStr(opts) + ");")
 	}
 }
