@@ -34,7 +34,6 @@ using dom::KeyFrames
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
 		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass(cssValidated) }
-		elem.onEvent("valid",	 false) |e| { e.target.style.addClass(cssValidated) }
 		elem.onEvent("submit",	 false) |e| { doSubmit(e) }		
 		elem.onEvent("validate", false) |e| {
 			// ensure we can see all the form validation errors 
@@ -44,7 +43,11 @@ using dom::KeyFrames
 				Hyperform.setMsg(input, "")
 			}
 		}
+		// Hyperform events
+		elem.onEvent("valid",	false) |e| { e.target.style.addClass(cssValidated) }
 		elem.onEvent("invalid", false) |e| {
+			if (e.target.style.hasClass(cssValidated) == false)
+				return
 			if (shakeInvalidInputs)
 				shakyShaky(e.target)
 		}
@@ -82,26 +85,31 @@ using dom::KeyFrames
 		return this
 	}
 
+	** Called when the server responds after posting the form.
 	This onMsg(|DomJaxMsg, Form form|? fn) {
 		_onMsgFn = fn
 		return this
 	}
 
+	** Called when the server responds with a Redirect message after posting the form.
 	This onRedirect(|DomJaxRedirect, Form form|? fn) {
 		_onRedirectFn = fn
 		return this
 	}
 
+	** Called when the server responds with a FormError message after posting the form.
 	This onFormErrs(|DomJaxFormErrs, Form form|? fn) {
 		_onFormErrsFn = fn
 		return this
 	}
 
+	** Called when the server responds with an Error message after posting the form.
 	This onErr(|DomJaxErr, Form form|? fn) {
 		_onErrFn = fn
 		return this
 	}
 
+	** Called when the server responds with an Okay message after posting the form.
 	This onOkay(|DomJaxMsg, Form form|? fn) {
 		_onOkayFn = fn
 		return this
@@ -131,25 +139,13 @@ using dom::KeyFrames
 	** No-op.
 	Void noop() { }
 	
-	private Void doSubmit(Event? event) {
-		event?.stop
-		
+	** Gathers up and returns all form values.
+	Str:Str values() {
 		// shame the browser can't gather form data for us... :(
 		// and FormData is multi-part only
 		formData := Str:Str[:]
-		inputs	 := Elem[,]
 		allFormInputs.each |input| {
 			if (!input.enabled) return
-
-			// disable inputs until we get a server response, to prevent multiple submits
-			inputs.add(input)
-			input.style.addClass("submitting")
-			input.enabled = false
-			if (input["type"] == "submit")
-				input.setProp("disabled", true)
-
-			// if we're able to submit, the inputs should be valid
-			Hyperform.setMsg(input, "")
 
 			value := null
 			// let's submit sensible values for Checkbox, Radio, et al
@@ -164,6 +160,36 @@ using dom::KeyFrames
 			if (value != null)
 				formData[input->name] = value
 		}
+		return formData
+	}
+	
+	Void setInputErr(Str inputName, Str errMsg) {
+		elem := elem.querySelector("[name=${inputName}]") 
+		Hyperform.setMsg(elem, errMsg)
+		elem.style.addClass(cssInvalid)
+		elem.style.addClass(cssValidated)
+		if (shakeInvalidInputs)
+			shakyShaky(elem)
+	}
+	
+	private Void doSubmit(Event? event) {
+		event?.stop
+		
+		formData := this.values
+		inputs	 := Elem[,]
+		allFormInputs.each |input| {
+			if (!input.enabled) return
+
+			// disable inputs until we get a server response, to prevent multiple submits
+			inputs.add(input)
+			input.style.addClass("submitting")
+			input.enabled = false
+			if (input["type"] == "submit")
+				input.setProp("disabled", true)
+
+			// if we're able to submit, the inputs should be valid
+			Hyperform.setMsg(input, "")
+		}		
 		
 		enableInputsFn := |->| {
 			// re-enable inputs as soon as, just in case fn throws an err
@@ -204,12 +230,7 @@ using dom::KeyFrames
 			elem.style.removeClass(cssValid).addClass(cssInvalid)	//.addClass(cssValidated)	// reserve isWasValid just for inputs - the CSS usually adds an icon
 
 			msg.formMsgs.each |val, key| {
-				elem := elem.querySelector("[name=${key}]") 
-				Hyperform.setMsg(elem, val)
-				elem.style.addClass(cssInvalid)
-				elem.style.addClass(cssValidated)
-				if (shakeInvalidInputs)
-					shakyShaky(elem)
+				setInputErr(key, val)
 			}
 			
 			// call the callback so we can check num of bad logins etc
