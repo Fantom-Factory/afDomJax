@@ -1,8 +1,8 @@
-# DomJax v0.0.8
+# DomJax v0.2.8
 ---
 
 [![Written in: Fantom](http://img.shields.io/badge/written%20in-Fantom-lightgray.svg)](https://fantom-lang.org/)
-[![pod: v0.0.8](http://img.shields.io/badge/pod-v0.0.8-yellow.svg)](http://eggbox.fantomfactory.org/pods/afDomJax)
+[![pod: v0.2.8](http://img.shields.io/badge/pod-v0.2.8-yellow.svg)](http://eggbox.fantomfactory.org/pods/afDomJax)
 [![Licence: ISC](http://img.shields.io/badge/licence-ISC-blue.svg)](https://choosealicense.com/licenses/isc/)
 
 ## <a name="Install"></a>Install
@@ -19,7 +19,7 @@ Or install `DomJax` with [fanr](https://fantom.org/doc/docFanr/Tool.html#install
 
 To use in a [Fantom](https://fantom-lang.org/) project, add a dependency to `build.fan`:
 
-    depends = ["sys 1.0", ..., "afDomJax 0.0"]
+    depends = ["sys 1.0", ..., "afDomJax 0.2"]
 
 ## <a name="documentation"></a>Documentation
 
