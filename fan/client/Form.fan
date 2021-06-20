@@ -25,39 +25,43 @@ using dom::KeyFrames
 	DomJaxReq	req
 	Bool		shakeInvalidInputs	// let's have this as "opt-in"
 
+	Uri action {
+		get { req._url }
+		set { req._url = it }
+	}
+	
 	private new _make(Elem formElem, DomJax? domjax := null) {
+		action		:= Uri.decode(formElem["action"] ?: throw Err("Form #${formElem.id} does not define an action attr"))
 		this.elem	= formElem
 		this.domjax	= domjax ?: DomJax()
-		this.req	= this.domjax.postReq(formAction)
+		this.req	= this.domjax.postReq(action)
 		
 		elem["method"]  = "POST"
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
-		elem.onEvent("blur" ,	 true ) |e| { e.target.style.addClass(cssValidated) }
-		elem.onEvent("submit",	 false) |e| { doSubmit(e) }		
-		elem.onEvent("validate", false) |e| {
-			// ensure we can see all the form validation errors 
-			allFormInputs.each |input| {
-				input.style.addClass(cssValidated)
-				// something strange is going on... I can't re-submit the form without this!?
-				Hyperform.setMsg(input, "")
-			}
+		elem.onEvent("blur" ,	 true ) |e| {
+			// when you nav out of an input, if it is invalid, you want it to turn red, even if it was never valid
+			e.target.style.addClass(cssValidated)
 		}
+		elem.onEvent("focus",	 true) |e| {
+			// if people are typing - let the input look valid
+			// don't judge the input before it's submitted!
+			e.target.style.removeClass(cssValid).removeClass(cssInvalid)
+			Hyperform.setMsg(e.target, "")
+		}
+		elem.onEvent("submit",	 false) |e| { doSubmit(e) }		
+
 		// Hyperform events
-		elem.onEvent("valid",	false) |e| { e.target.style.addClass(cssValidated) }
+		elem.onEvent("valid",	false) |e| {
+			e.target.style.addClass(cssValidated)
+		}
 		elem.onEvent("invalid", false) |e| {
+			e.target.style.addClass(cssInvalid)	//new
 			if (e.target.style.hasClass(cssValidated) == false)
 				return
+			// the problem is that this is invoked onFocus
 			if (shakeInvalidInputs)
 				shakyShaky(e.target)
-		}
-		allFormInputs.each {
-			it.onEvent("focus",	 false) |e| {
-				// if people are typing - let the input look valid
-				// don't judge the input before it's submitted!
-				e.target.style.removeClass(cssValidated).removeClass(cssValid).removeClass(cssInvalid)
-				Hyperform.setMsg(e.target, "")
-			}			
 		}
 	}
 
@@ -75,6 +79,7 @@ using dom::KeyFrames
 		return elem.prop(Form#.qname)
 	}
 
+	@Deprecated { msg="Use action instead" }
 	Uri formAction() {
 		Uri.decode(elem["action"] ?: throw Err("Form #${elem.id} does not define an action attr"))
 	}
@@ -165,7 +170,16 @@ using dom::KeyFrames
 	
 	Void setInputErr(Str inputName, Str errMsg) {
 		elem := elem.querySelector("[name=${inputName}]") 
-		Hyperform.setMsg(elem, errMsg)
+		if (elem == null) {
+			Log.get("afDomJax").warn("Could not find input for name: ${inputName}")
+			return
+		}
+		
+		// do NOT set a form field err msg - 'cos they ALL need to be cleared before the form can be submitted again
+		// while this sounds fine in theory, in practice this does not play nice with LastPass auto fills and the like
+		// so, given it's just a pop-up title msg, best to just ignore it
+		// Hyperform.setMsg(elem, errMsg)
+
 		elem.style.addClass(cssInvalid)
 		elem.style.addClass(cssValidated)
 		if (shakeInvalidInputs)
@@ -189,6 +203,7 @@ using dom::KeyFrames
 
 			// if we're able to submit, the inputs should be valid
 			Hyperform.setMsg(input, "")
+			input.style.removeClass(cssInvalid)
 		}		
 		
 		enableInputsFn := |->| {
