@@ -7,6 +7,7 @@ using dom::KeyFrames
 
 @Js class Form {
 	private Func?	_onSubmitFn
+	private	Func?	_onResFn
 	private	Func?	_onMsgFn
 	private	Func?	_onFormErrsFn
 	private	Func?	_onRedirectFn
@@ -85,37 +86,43 @@ using dom::KeyFrames
 	}
 
 	** A callback fn that can stop the form submission by returning 'true'. 
-	This onSubmit(|Str:Str formData, Form form->Bool|? fn) {
+	This onSubmit(|Str:Str formData, Form->Bool|? fn) {
 		_onSubmitFn = fn
 		return this
 	}
 
 	** Called when the server responds after posting the form.
-	This onMsg(|DomJaxMsg, Form form|? fn) {
+	This onRes(|HttpRes, Form|? fn) {
+		_onResFn = fn
+		return this
+	}
+	
+	** Called when the server responds with a DomJaxMsg after posting the form.
+	This onMsg(|DomJaxMsg, Form|? fn) {
 		_onMsgFn = fn
 		return this
 	}
 
 	** Called when the server responds with a Redirect message after posting the form.
-	This onRedirect(|DomJaxRedirect, Form form|? fn) {
+	This onRedirect(|DomJaxRedirect, Form|? fn) {
 		_onRedirectFn = fn
 		return this
 	}
 
 	** Called when the server responds with a FormError message after posting the form.
-	This onFormErrs(|DomJaxFormErrs, Form form|? fn) {
+	This onFormErrs(|DomJaxFormErrs, Form|? fn) {
 		_onFormErrsFn = fn
 		return this
 	}
 
 	** Called when the server responds with an Error message after posting the form.
-	This onErr(|DomJaxErr, Form form|? fn) {
+	This onErr(|DomJaxErr, Form|? fn) {
 		_onErrFn = fn
 		return this
 	}
 
 	** Called when the server responds with an Okay message after posting the form.
-	This onOkay(|DomJaxMsg, Form form|? fn) {
+	This onOkay(|DomJaxMsg, Form|? fn) {
 		_onOkayFn = fn
 		return this
 	}
@@ -232,6 +239,7 @@ using dom::KeyFrames
 		
 		domjax.onResponse |httpRes| {
 			enableInputsFn()
+			_onResFn?.call(httpRes, this)
 		}
 		
 		// be-careful not to overwrite any existing DomJax onMsgFn
