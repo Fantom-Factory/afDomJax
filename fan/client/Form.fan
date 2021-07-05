@@ -141,11 +141,13 @@ using dom::KeyFrames
 	}
 	
 	** Manually submits the form.
-	Void submit(Bool force := false, Bool report := true) {
+	** Returns 'true' if the form was valid and submitted.
+	Bool submit(Bool force := false, Bool report := true) {
 		if (!force)
 			if (!isValid(report))
-				return
+				return false
 		doSubmit(null)
+		return true
 	}
 	
 	** No-op.
