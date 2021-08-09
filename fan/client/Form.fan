@@ -167,7 +167,12 @@ using dom::KeyFrames
 				case "checkbox"	: value = input->checked->toStr
 				case "radio"	: value = input->checked == true ? input->value : null
 				// https://stackoverflow.com/questions/14333797/finding-which-option-is-selected-in-select-without-jquery
-				case "select"	: value = input.querySelector("option:checked")->value
+				case "select"	:
+					// cater for selects with "multiple" values
+					values := input.querySelectorAll("option:checked").map { it->value }
+					if (values.size > 0)
+						// CSV is down and dirty, but it gets us out of a hole with DLR
+						value	= values.size == 1 ? values.first : values.join(",")
 				default			: value = input->value
 			}
 
