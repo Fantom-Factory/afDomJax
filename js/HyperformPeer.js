@@ -7,7 +7,7 @@ fan.afDomJax.HyperformPeer.setMsg = function(elem, msg) {
 	var element = elem.peer.elem;
 
 	// prevent stack-overflow errors
-	if (msg === "" && element.validity.valid)
+	if (msg === "" && hyperform.ValidityState(element).valid)
 		return;
 
 	element.setCustomValidity(msg);

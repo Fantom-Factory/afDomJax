@@ -68,7 +68,7 @@ using afPickle::Pickle
 
 	Void send(DomJaxReq req, |DomJaxMsg|? onOkayFn := null) {
 		req._prepare(csrfToken)
-		
+
 		url := req.url
 		if (log.isDebug) {
 			reqUrl := url.scheme == null ? "" : url.scheme + "://"
