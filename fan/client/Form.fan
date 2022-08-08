@@ -14,12 +14,8 @@ using dom::KeyFrames
 	private	Func?	_onErrFn
 	private	Func?	_onOkayFn
 
-	** CSS class applied to the form (and input) upon validation.
-			Str				cssValidated	:= "isWasValid"
-	** CSS class applied to the form upon submitting a request. (Use to hide form error divs.)
-			Str				cssValid		:= "is-valid"
-	** CSS class applied to the form upon receiving a DomJax FormErrMsg response.
-			Str				cssInvalid		:= "is-invalid"
+	** CSS class applied to the form and elements upon receiving a DomJax FormErrMsg response.
+			Str				cssInvalid		:= "invalid"
 
 	Elem		elem		{ private set }
 	DomJax		domjax
@@ -32,37 +28,30 @@ using dom::KeyFrames
 	}
 	
 	private new _make(Elem formElem, DomJax? domjax := null) {
-		action		:= Uri.decode(formElem["action"] ?: throw Err("Form #${formElem.id} does not define an action attr"))
-		this.elem	= formElem
-		this.domjax	= domjax ?: DomJax()
-		this.req	= this.domjax.postReq(action)
+		action			:= Uri.decode(formElem["action"] ?: throw Err("Form #${formElem.id} does not define an action attr"))
+		this.elem		= formElem
+		this.domjax		= domjax ?: DomJax()
+		this.req		= this.domjax.postReq(action)
 		
-		elem["method"]  = "POST"
+		formElem["method"]  = "POST"
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
-		elem.onEvent("blur" ,	 true ) |e| {
-			// when you nav out of an input, if it is invalid, you want it to turn red, even if it was never valid
-			e.target.style.addClass(cssValidated)
+		formElem.onEvent("blur" ,	 true ) |e| {
+			if (checkValidity(e.target) == false)
+				e.target.style.addClass(cssInvalid)
 		}
-		elem.onEvent("focus",	 true) |e| {
+		formElem.onEvent("focus",	 false) |e| {
 			// if people are typing - let the input look valid
 			// don't judge the input before it's submitted!
-			e.target.style.removeClass(cssValid).removeClass(cssInvalid)
-			Hyperform.setMsg(e.target, "")
+			e.target.style.removeClass(cssInvalid)
 		}
-		elem.onEvent("submit",	 false) |e| { doSubmit(e) }		
-
-		// Hyperform events
-		elem.onEvent("valid",	false) |e| {
-			e.target.style.addClass(cssValidated)
+		formElem.onEvent("input",	 false) |e| {
+			// remove invalid marker when the input suddenly becomes valid
+			if (checkValidity(e.target))
+				e.target.style.removeClass(cssInvalid)
 		}
-		elem.onEvent("invalid", false) |e| {
-			e.target.style.addClass(cssInvalid)	//new
-			if (e.target.style.hasClass(cssValidated) == false)
-				return
-			// the problem is that this is invoked onFocus
-			if (shakeInvalidInputs)
-				shakyShaky(e.target)
+		formElem.onEvent("submit",	 false) |e| {
+			doSubmit(e)
 		}
 	}
 
@@ -82,7 +71,7 @@ using dom::KeyFrames
 
 	@Deprecated { msg="Use action instead" }
 	Uri formAction() {
-		Uri.decode(elem["action"] ?: throw Err("Form #${elem.id} does not define an action attr"))
+		Uri.decode(formElem["action"] ?: throw Err("Form #${formElem.id} does not define an action attr"))
 	}
 
 	** A callback fn that can stop the form submission by returning 'true'. 
@@ -129,22 +118,20 @@ using dom::KeyFrames
 
 	** Turns form validation off. Useful for debugging.
 	Bool validate {
-		get { elem.attr("novalidate") == null }
-		set { if (it) elem.removeAttr("novalidate"); else elem.setAttr("novalidate", "") }
+		get { formElem.attr("novalidate") == null }
+		set { if (it) formElem.removeAttr("novalidate"); else formElem.setAttr("novalidate", "") }
 	}
 	
 	** Returns 'true' if all inputs are valid. 
-	** 
-	** If 'report' is 'true' then input errors are reported to the user.
-	Bool isValid(Bool report := false) {
-		report ? Hyperform.reportValidity(elem) : Hyperform.checkValidity(elem)
+	Bool isValid() {
+		checkValidity(formElem)
 	}
-	
+
 	** Manually submits the form.
 	** Returns 'true' if the form was valid and submitted.
-	Bool submit(Bool force := false, Bool report := true) {
-		if (!force)
-			if (!isValid(report))
+	Bool submit(Bool force := false) {
+		if (force == false)
+			if (reportValidity(formElem) == false)
 				return false
 		doSubmit(null)
 		return true
@@ -183,8 +170,8 @@ using dom::KeyFrames
 	}
 	
 	Void setInputErr(Str inputName, Str errMsg) {
-		elem := elem.querySelector("[name=${inputName}]") 
-		if (elem == null) {
+		inputElem := formElem.querySelector("[name=${inputName}]") 
+		if (inputElem == null) {
 			Log.get("afDomJax").warn("Could not find input for name: ${inputName}")
 			return
 		}
@@ -194,11 +181,19 @@ using dom::KeyFrames
 		// so, given it's just a pop-up title msg, best to just ignore it
 		// Hyperform.setMsg(elem, errMsg)
 
-		elem.style.addClass(cssInvalid)
-		elem.style.addClass(cssValidated)
+		inputElem.style.addClass(cssInvalid)
 		if (shakeInvalidInputs)
-			shakyShaky(elem)
+			shakyShaky(inputElem)
 	}
+	
+	** Checks the element's value against its constraints.
+	** If the value is invalid, it fires an 'invalid' event at the element and returns 'false';
+	** otherwise returns 'true'.
+	native Bool checkValidity(Elem elem)
+	
+	** Performs the same validity checking steps as 'checkValidity()' but if 'invalid', 
+	** this also fires the 'invalid' event on the element reports the problem to the user.
+	native Bool reportValidity(Elem elem)
 	
 	private Void doSubmit(Event? event) {
 		event?.stop
@@ -216,7 +211,6 @@ using dom::KeyFrames
 				input.setProp("disabled", true)
 
 			// if we're able to submit, the inputs should be valid
-			Hyperform.setMsg(input, "")
 			input.style.removeClass(cssInvalid)
 		}		
 		
@@ -242,7 +236,7 @@ using dom::KeyFrames
 
 		// hide any form level err msgs - as they shouldn't be applicable anymore
 		// (as in, why would we be submitting an invalid form!?)
-		elem.style.removeClass(cssInvalid).addClass(cssValid)
+		formElem.style.removeClass(cssInvalid)
 		
 		domjax.onResponse |httpRes| {
 			enableInputsFn()
@@ -257,7 +251,7 @@ using dom::KeyFrames
 			}
 
 		domjax.onFormErrs |msg| {
-			elem.style.removeClass(cssValid).addClass(cssInvalid)	//.addClass(cssValidated)	// reserve isWasValid just for inputs - the CSS usually adds an icon
+			formElem.style.addClass(cssInvalid)
 
 			msg.formMsgs.each |val, key| {
 				setInputErr(key, val)
@@ -286,9 +280,11 @@ using dom::KeyFrames
 			_onOkayFn?.call(it, this)
 		}
 	}
+	
+	private Elem formElem() { elem }
 
 	private Elem[] allFormInputs() {
-		elem.querySelectorAll("input, select, submit, button, textarea")
+		formElem.querySelectorAll("input, select, submit, button, textarea")
 	}
 	
 	static Void shakyShaky(Elem elem) {
