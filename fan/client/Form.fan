@@ -4,6 +4,7 @@ using dom::Event
 using dom::HttpRes
 using dom::KeyFrame
 using dom::KeyFrames
+using dom::DomFile
 
 @Js class Form {
 	private Func?	_onSubmitFn
@@ -26,13 +27,19 @@ using dom::KeyFrames
 		get { req._url }
 		set { req._url = it }
 	}
-	
+
+	MimeType enctype {
+		get { MimeType(req.headers["Content-Type"]) }
+		set { req.headers["Content-Type"] = it.toStr }
+	}
+
 	private new _make(Elem formElem, DomJax? domjax := null) {
 		action			:= Uri.decode(formElem["action"] ?: throw Err("Form #${formElem.id} does not define an action attr"))
 		this.elem		= formElem
 		this.domjax		= domjax ?: DomJax()
 		this.req		= this.domjax.postReq(action)
-		
+		this.enctype	= MimeType (formElem["enctype"] ?: "application/x-www-form-urlencoded")
+
 		formElem["method"]  = "POST"
 
 		// useCapture=true, because `blur` doesn't bubble. See https://developer.mozilla.org/en-US/docs/Web/Events/blur#Event_delegation
@@ -69,13 +76,8 @@ using dom::KeyFrames
 		return elem.prop(Form#.qname)
 	}
 
-	@Deprecated { msg="Use action instead" }
-	Uri formAction() {
-		Uri.decode(formElem["action"] ?: throw Err("Form #${formElem.id} does not define an action attr"))
-	}
-
 	** A callback fn that can stop the form submission by returning 'true'. 
-	This onSubmit(|Str:Str formData, Form->Bool|? fn) {
+	This onSubmit(|Str:Obj formData, Form->Bool|? fn) {
 		_onSubmitFn = fn
 		return this
 	}
@@ -141,17 +143,17 @@ using dom::KeyFrames
 	Void noop() { }
 	
 	** Gathers up and returns all form values.
-	Str:Str values() {
+	Str:Obj values() {
 		// shame the browser can't gather form data for us... :(
 		// and FormData is multi-part only
-		formData := Str:Str[:]
+		formData := Str:Obj[:]
 		allFormInputs.each |input| {
 			if (!input.enabled) return
 
 			value := null
-			// let's submit sensible values for Checkbox, Radio, et al
+			// let's submit sensible values (i.e. "true") for Checkbox, Radio, et al
 			switch (input.attr("type")?.lower ?: input.tagName.lower) {
-				case "checkbox"	: value = input->checked->toStr
+				case "checkbox"	: value = input->checked == true // make sure it's a bool
 				case "radio"	: value = input->checked == true ? input->value : null
 				// https://stackoverflow.com/questions/14333797/finding-which-option-is-selected-in-select-without-jquery
 				case "select"	:
@@ -160,6 +162,9 @@ using dom::KeyFrames
 					if (values.size > 0)
 						// CSV is down and dirty, but it gets us out of a hole with DLR
 						value	= values.size == 1 ? values.first : values.join(",")
+				case "file"		:
+					// I'm not sure how we define an input with multiple files!?
+					value = (DomFile?) input->files->first
 				default			: value = input->value
 			}
 

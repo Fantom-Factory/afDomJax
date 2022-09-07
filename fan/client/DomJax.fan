@@ -62,8 +62,11 @@ using afPickle::Pickle
 		postReq(url).send(onOkayFn)
 	}
 
-	Void postForm(Uri url, Str:Str form, |DomJaxMsg|? onOkayFn := null) {
-		postReq(url) { it.form = form }.send(onOkayFn)
+	Void postForm(Uri url, Str:Obj form, |DomJaxMsg|? onOkayFn := null) {
+		postReq(url) {
+			it.form = form
+			it.headers["Content-Type"] = "application/x-www-form-urlencoded"
+		}.send(onOkayFn)
 	}
 
 	Void send(DomJaxReq req, |DomJaxMsg|? onOkayFn := null) {
@@ -77,7 +80,7 @@ using afPickle::Pickle
 			log.debug("\n\nDomJax HTTP Request$reqUrl\n\n${req.dumpToStr}\n")
 		}
 
-		_doSend(req.method, url, req.headers, req.body) { processRes(url, it, onOkayFn) }
+		_doSend(req.method, url, req.headers, req.form) { processRes(url, it, onOkayFn) }
 	}
 
 	Void goto(Uri url) {
@@ -215,8 +218,8 @@ using afPickle::Pickle
 
 	** Override hook for server-side testing.
 	@NoDoc
-	virtual Void _doSend(Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| resFn) {
-		DomJaxMiniReq(maxRetries, maxResponseTime, method, url, headers, body, resFn).send
+	virtual Void _doSend(Str method, Uri url, Str:Str headers, [Str:Obj]? form, |HttpRes| resFn) {
+		DomJaxMiniReq(maxRetries, maxResponseTime, method, url, headers, form, resFn).send
 	}
 
 	** Override hook for server-side testing.
@@ -236,12 +239,11 @@ using afPickle::Pickle
 	private DomJax?	domjax
 
 	Uri			_url
-	Str			method := "GET"
+	Str			method		:= "GET"
+	Str:Str		headers		:= Str:Str[:] { it.caseInsensitive = true }
 	Obj?[]?		context
 	[Str:Str]?	query
-	Str:Str		headers	:= Str:Str[:]
-	[Str:Str]?	form
-	Obj?		body
+	[Str:Obj]?	form
 	
 	new make(Uri url) {
 		this._url	= url
@@ -320,21 +322,18 @@ using afPickle::Pickle
 		out := "${method} ${url.relToAuth.encode} HTTP/1.1\n"
 		headers.each |v, k| { out += "${k}: ${v}\n" }
 		out += "\n"
-		if (body != null) {
-			out += body.toStr 
+		if (form != null) {
+			out += Uri.encodeQuery(form.map { it.toStr })
 			out += "\n"
 		}
 		return out
 	}
 	
-	internal This _prepare(Str? csrfToken) {
-		if (form != null) {
+	internal Void _prepare(Str? csrfToken) {
+		if (form != null)
 			if (csrfToken != null)
 				form = form.rw["_csrfToken"] = csrfToken
-			body = Uri.encodeQuery(form)
-			headers["Content-Type"] = "application/x-www-form-urlencoded"
-		}
-		
+
 		headers["X-Requested-With"] = "XMLHttpRequest"
 		headers["X-Requested-By"]	= DomJax#.pod.name
 		return this
@@ -348,25 +347,25 @@ using afPickle::Pickle
 	private	Str			method
 	private	Uri			url
 	private	Str:Str		headers
-	private	Obj?		body
+	private	[Str:Obj]?	form
 	private	|HttpRes|	resFn
 	private Duration[]	startTimes
 	
-	new make(Int maxRetries, Duration maxResponseTime, Str method, Uri url, Str:Str headers, Obj? body, |HttpRes| resFn) {
+	new make(Int maxRetries, Duration maxResponseTime, Str method, Uri url, Str:Str headers, [Str:Obj]? form, |HttpRes| resFn) {
 		this.maxRetries			= maxRetries
 		this.maxResponseTime	= maxResponseTime
 		this.method				= method
 		this.url				= url
 		this.headers			= headers
-		this.body				= body
+		this.form				= form
 		this.resFn				= resFn
 		this.startTimes			= Duration[,]
 	}
 	
 	Void send() {
 		startTimes.push(Duration.now)
-		HttpReq { it.uri = this.url; it.headers = this.headers }.send(method, body) |HttpRes res| {
-			
+		
+		doResFn := |HttpRes res| {
 			// a HTTP status of 0 typically means a connection error
 			if (res.status == 0) {
 				log.warn("HTTP 0 Err - Dodgy connectivity suspected")
@@ -403,5 +402,9 @@ using afPickle::Pickle
 			// success!
 			resFn(res)
 		}
+
+		_doSend(doResFn)
 	}
+	
+	private native Void _doSend(|HttpRes res| resFn)
 }
