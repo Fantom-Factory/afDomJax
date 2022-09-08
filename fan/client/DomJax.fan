@@ -2,6 +2,7 @@ using dom::Elem
 using dom::HttpReq
 using dom::HttpRes
 using dom::Win
+using dom::DomFile
 using concurrent::Actor
 using afPickle::Pickle
 
@@ -330,9 +331,16 @@ using afPickle::Pickle
 	}
 	
 	internal Void _prepare(Str? csrfToken) {
-		if (form != null)
+		if (form != null) {
 			if (csrfToken != null)
 				form = form.rw["_csrfToken"] = csrfToken
+			
+			// file uploads MUST be sent via multipart but guaranteed...
+			// I'm gonna forget to set the Form's enctype!  
+			if (form.any { it is DomFile })
+				// JS adds the all-important "boundry" param to the MimeType
+				form["Content-Type"] = "multipart/form-data"
+		}
 
 		headers["X-Requested-With"] = "XMLHttpRequest"
 		headers["X-Requested-By"]	= DomJax#.pod.name
@@ -350,6 +358,7 @@ using afPickle::Pickle
 	private	[Str:Obj]?	form
 	private	|HttpRes|	resFn
 	private Duration[]	startTimes
+	private	Bool		isMultipart
 	
 	new make(Int maxRetries, Duration maxResponseTime, Str method, Uri url, Str:Str headers, [Str:Obj]? form, |HttpRes| resFn) {
 		this.maxRetries			= maxRetries
@@ -360,6 +369,14 @@ using afPickle::Pickle
 		this.form				= form
 		this.resFn				= resFn
 		this.startTimes			= Duration[,]
+		this.isMultipart		= headers["Content-Type"]?.lower == "multipart/form-data"
+		if (this.isMultipart)
+			// the JS FormData adds its own Content-Type with the all-important "boundry" param
+			// needed to decode the form data on the server
+			headers.remove("Content-Type")
+		else
+			// for x-www-form-urlencoded form data, convert it all to Strs
+			this.form = form?.map { it.toStr }
 	}
 	
 	Void send() {
@@ -403,8 +420,8 @@ using afPickle::Pickle
 			resFn(res)
 		}
 
-		_doSend(doResFn)
+		_doSend(isMultipart, doResFn)
 	}
 	
-	private native Void _doSend(|HttpRes res| resFn)
+	private native Void _doSend(Bool isMultipart, |HttpRes res| resFn)
 }
