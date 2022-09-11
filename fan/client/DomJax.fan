@@ -193,8 +193,14 @@ using afPickle::Pickle
 	
 	** Public so it may be invoked manually
 	static Void doRedirect(DomJaxRedirect redirect) {
-		if (redirect.method == "GET")
-			return Win.cur.hyperlink(redirect.location)
+		if (redirect.method == "GET") {
+			Win.cur.hyperlink(redirect.location)
+			
+			// some URIs, like those for the same page but with an extra #frag, do NOT trigger a page reload
+			// so if we're still here, hanging around, FORCE a page reload to the new URL
+			Win.cur.reload(true)
+			return
+		}
 		
 		form := Elem("form") {
 			it.id = "jsRedirectForm"
