@@ -5,7 +5,7 @@ class Build : BuildPod {
 	new make() {
 		podName = "afDomJax"
 		summary = "Browser / Server communication"
-		version = Version("0.3.1")
+		version = Version("0.3.2")
 
 		meta = [
 			"pod.dis"		: "DomJax",
@@ -36,5 +36,8 @@ class Build : BuildPod {
 		srcDirs = [`fan/`, `fan/bedsheet/`, `fan/client/`]
 		resDirs = [`doc/`, `res/`]
 		jsDirs  = [`js/`]
+		
+		docApi	= false
+		docSrc	= true
 	}
 }
