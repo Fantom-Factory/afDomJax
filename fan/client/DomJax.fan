@@ -197,13 +197,20 @@ using afPickle::Pickle
 			win		:= Win.cur
 			oldUrl	:= win.uri
 			Win.cur.hyperlink(redirect.location)
-			
+
 			// some URIs, like those for the same page but with an extra #frag, do NOT trigger a page reload
 			// so if we're still here, hanging around, FORCE a page reload to the new URL
-			newUrl := redirect.location
-			if (oldUrl.auth == newUrl.auth && oldUrl.pathOnly == newUrl.pathOnly)
+			newUrl		:= redirect.location
+			sameAuth	:= oldUrl.auth == newUrl.auth
+			samePath	:= oldUrl.pathOnly == newUrl.pathOnly
+
+			// the auth on re-directs (for the same site) is usually null
+			if (oldUrl.auth == null || newUrl.auth == null)
+				sameAuth = true
+
+			if (sameAuth && samePath)
 				// we need to set a timeout, else browsers BLOCK the initial redirect / hyperlink 
-				Win.cur.setTimeout(50ms) {
+				Win.cur.setTimeout(10ms) {
 					typeof.pod.log.info("Still around after redirect - forcing a page reload")
 					Win.cur.reload(true)
 				}
