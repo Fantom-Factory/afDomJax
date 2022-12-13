@@ -386,7 +386,7 @@ using afPickle::Pickle
 		this.maxResponseTime	= maxResponseTime
 		this.method				= method
 		this.url				= url
-		this.headers			= headers
+		this.headers			= headers.dup	// BUG-FIX - use dup() cos we remove Content-Type, and we may want to send the form twice!
 		this.form				= form
 		this.resFn				= resFn
 		this.startTimes			= Duration[,]
@@ -394,7 +394,7 @@ using afPickle::Pickle
 		if (this.isMultipart)
 			// the JS FormData adds its own Content-Type with the all-important "boundry" param
 			// needed to decode the form data on the server
-			headers.remove("Content-Type")
+			this.headers.remove("Content-Type")
 		else
 			// for x-www-form-urlencoded form data, convert it all to Strs
 			this.form = form?.map { it.toStr }
