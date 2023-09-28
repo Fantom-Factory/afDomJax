@@ -36,7 +36,8 @@ class Build : BuildPod {
 		srcDirs = [`fan/`, `fan/bedsheet/`, `fan/client/`]
 		resDirs = [`doc/`, `res/`]
 		jsDirs  = [`js/`]
-		
+		javaDirs= [`java/`]
+
 		docApi	= false
 		docSrc	= true
 	}

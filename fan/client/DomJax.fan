@@ -445,4 +445,35 @@ using afPickle::Pickle
 	}
 	
 	private native Void _doSend(Bool isMultipart, |HttpRes res| resFn)
+	
+	** Re-directed from DomJaxMiniReq._doSend()
+	** Send via HttpReq - which assumes afxDom has been configured.
+	Void _doSendJava(Bool isMultipart, |HttpRes| resFn) {
+		content := null
+		if (form != null) {
+			if (isMultipart)
+//				content = writeMultipartForm(headers) |mform| {
+//					form.each |val, nom| {
+//						if (val is DomFile)
+//							mform.writeFile(nom, val)
+//						else
+//							mform.writeText(nom, val)
+//					}
+//				}
+				throw UnsupportedErr("Are you sure you want to send Files over DomJax? Would you not prefer to post a Form?")
+			content = Uri.encodeQuery(form)
+		}
+		HttpReq {
+			it.uri		= this.url
+			it.headers	= this.headers
+		}.send(method, content, resFn)
+	}
+	
+//	private Buf writeMultipartForm(Str:Str headers, |MultipartForm| formFunc) {
+//		form := MultipartForm()	// need to copy over from afDom
+//		formFunc(form)
+//		form._writeBoundryEnd
+//		headers["Content-Type"] = form.contentType.toStr
+//		return form.buf
+//	}
 }
