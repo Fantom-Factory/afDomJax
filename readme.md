@@ -1,8 +1,8 @@
-# DomJax v0.3.8
+# DomJax v0.3.10
 ---
 
 [![Written in: Fantom](http://img.shields.io/badge/written%20in-Fantom-lightgray.svg)](https://fantom-lang.org/)
-[![pod: v0.3.8](http://img.shields.io/badge/pod-v0.3.8-yellow.svg)](http://eggbox.fantomfactory.org/pods/afDomJax)
+[![pod: v0.3.10](http://img.shields.io/badge/pod-v0.3.10-yellow.svg)](http://eggbox.fantomfactory.org/pods/afDomJax)
 [![Licence: ISC](http://img.shields.io/badge/licence-ISC-blue.svg)](https://choosealicense.com/licenses/isc/)
 
 ## <a name="Install"></a>Install

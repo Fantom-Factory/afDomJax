@@ -31,14 +31,14 @@
 		}
 	}
 
-	static new makeServerErr(Str code, Str msg, Err? cause := null, Str? detail := null) {
+	static new makeServerErr(Str code, Str msg, Obj? cause := null, Str? detail := null) {
 		DomJaxErr {
 			it.isErr		= true
 			it.errTitle		= "Server Error"
 			it.errCode		= code
 			it.errMsg		= msg
 			// don't show server side stack traces to the client!
-			it.errType		= cause?.typeof?.qname
+			it.errType		= (cause as Str) ?: (cause as Err)?.typeof?.qname
 			it.errDetail	= detail
 			it.isServerErr	= true
 		}
@@ -54,13 +54,13 @@
 		}
 	}
 
-	static new makeClientErr(Str title, Str msg, Err? cause := null) {
+	static new makeClientErr(Str title, Str msg, Obj? cause := null) {
 		DomJaxErr {
 			it.isErr		= true
 			it.errTitle		= title
 			it.errCode		= ""
 			it.errMsg		= msg
-			it.errType		= cause?.typeof?.qname
+			it.errType		= (cause as Str) ?: (cause as Err)?.typeof?.qname
 			it.cause		= cause
 			it.isClientErr	= true
 		}
