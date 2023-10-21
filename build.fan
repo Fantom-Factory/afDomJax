@@ -5,7 +5,7 @@ class Build : BuildPod {
 	new make() {
 		podName = "afDomJax"
 		summary = "Browser / Server communication"
-		version = Version("0.3.11")
+		version = Version("0.3.12")
 
 		meta = [
 			"pod.dis"		: "DomJax",
@@ -25,12 +25,12 @@ class Build : BuildPod {
 			// ---- Fantom Factory Core ---------
 			"afIoc        3.0.8  - 3.0",
 			"afIocEnv     1.1.0  - 1.1",
-			"afIocConfig  1.1.0  - 1.1",
+			"afIocConfig  1.1.2  - 1.1",
 
 			// ---- Fantom Factory Web ----------
-			"afBedSheet   1.5.16 - 1.5",
-			"afDuvet      1.1.10 - 1.1",
-			"afPickle     1.0.0  - 1.0",
+			"afBedSheet   1.5.18 - 1.5",
+			"afDuvet      1.1.12 - 1.1",
+			"afPickle     1.0.4  - 1.0",
 		]
 
 		srcDirs = [`fan/`, `fan/bedsheet/`, `fan/client/`]

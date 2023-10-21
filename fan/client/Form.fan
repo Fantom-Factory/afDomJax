@@ -59,6 +59,7 @@ using dom::DomFile
 		}
 		formElem.onEvent("submit",	 false) |e| {
 			doSubmit(e)
+//			e.stop
 		}
 	}
 
